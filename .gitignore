@@ -1,3 +1,5 @@
 .vscode/
 tests/
 other/
+
+*.un~
