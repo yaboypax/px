@@ -6,7 +6,6 @@
 
 #define DC_OFFSET 1.0E-25
 
-
 typedef struct
 {
     float sampleRate;
@@ -36,7 +35,34 @@ typedef struct
     px_mono_compressor right;
 } px_stereo_compressor;
 
+// API functions
+// ----------------------------------------------------------------------------------------------------------------------
+// mono
+static void px_compressor_mono_process(px_mono_compressor* compressor, float* input, bool isStereo, float linkedSignal);
+static void px_compressor_mono_initialize(px_mono_compressor* compressor, float inSampleRate);
 
+static void px_compressor_mono_set_parameters(px_mono_compressor* compressor, px_compressor_parameters inParameters);
+static void px_compressor_mono_set_threshold(px_mono_compressor* compressor, float inThreshold);
+static void px_compressor_mono_set_ratio(px_mono_compressor* compressor, float inRatio);
+static void px_compressor_mono_set_knee(px_mono_compressor* compressor, float inKneeWidth);
+static void px_compressor_mono_set_attack(px_mono_compressor* compressor, float inAttack);
+static void px_compressor_mono_set_release(px_mono_compressor* compressor, float inRelease);
+
+// stereo
+static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor, float* inputLeft, float* inputRight);
+static void px_compressor_stereo_initialize(px_stereo_compressor* stereoCompressor, float inSampleRate);
+
+static void px_compressor_stereo_set_parameters(px_stereo_compressor* stereoCompressor, px_compressor_parameters inParameters);
+static void px_compressor_stereo_set_threshold(px_stereo_compressor* stereoCompressor, float inThreshold);
+static void px_compressor_stereo_set_ratio(px_stereo_compressor* stereoCompressor, float inRatio);
+static void px_compressor_stereo_set_knee(px_stereo_compressor* stereoCompressor, float inKneeWidth);
+static void px_compressor_stereo_set_attack(px_stereo_compressor* stereoCompressor, float inAttack);
+static void px_compressor_stereo_set_release(px_stereo_compressor* stereoCompressor, float inRelease);
+
+// ----------------------------------------------------------------------------------------------------------------------
+
+// inline functions 
+// ----------------------------------------------------------------------------------------------------------------------
 static inline float lin2dB(float lin) {
     static const float LOG_2_DB = 8.6858896380650365530225783783321;	// 20 / ln( 10 )
     return log(lin) * LOG_2_DB;
@@ -102,8 +128,7 @@ static inline float px_compressor_calculate_knee(px_mono_compressor* compressor,
     return gain;
 }
 
-
-//#define px_compressor_mono_process(compressor, floatptr) px_compressor_mono_process(compressor, floatptr, false, 0.0f)
+// --------------------------------------------------------------------------------------------------------
 
 static void px_compressor_mono_process(px_mono_compressor* compressor, float* input, bool isStereo, float linkedSignal)
 {
