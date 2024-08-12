@@ -82,14 +82,14 @@ static inline void px_envelope_detector_calculate_coefficient(px_envelope_detect
     envelope->coefficient = exp(-1000.f / (envelope->timeConstant * envelope->sampleRate));
 }
 
-static inline void px_envelope_detector_run(px_envelope_detector* envelope, float in, float* state)
+static inline void px_envelope_detector_run(const px_envelope_detector* envelope, float in, float* state)
 {
     *state = in + envelope->coefficient * (*state - in);
 }
 
 
 
-static inline void px_compressor_calculate_envelope(px_mono_compressor* compressor, float in, float* state)
+static inline void px_compressor_calculate_envelope(const px_mono_compressor* compressor, float in, float* state)
 {
     if (in > *state)
     {
@@ -102,7 +102,7 @@ static inline void px_compressor_calculate_envelope(px_mono_compressor* compress
 }
 
 // takes in dB value returns linear (.f)
-static inline float px_compressor_calculate_knee(px_mono_compressor* compressor, float overdB)
+static inline float px_compressor_calculate_knee(const px_mono_compressor* compressor, float overdB)
 {
     float kneeStart = compressor->parameters.threshold - compressor->parameters.kneeWidth / 2.0;
     float kneeEnd = compressor->parameters.threshold + compressor->parameters.kneeWidth / 2.0;
