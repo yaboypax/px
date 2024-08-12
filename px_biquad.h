@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#include "px_globals.h"
+
 typedef enum {
    BIQUAD_NONE,
    BIQUAD_LOWPASS,
@@ -19,24 +21,22 @@ typedef enum {
 
 typedef struct 
 {
-   double a0;
-   double a1;
-   double a2;
-   double b1;
-   double b2;
-   double z1;
-   double z2;
+   float a0;
+   float a1;
+   float a2;
+   float b1;
+   float b2;
+   float z1;
+   float z2;
 } px_biquad_coefficients;
 
 typedef struct
 {
-   double sample_rate;
-   double frequency;
-   double gain;
-   double quality;
+   float sample_rate;
+   float frequency;
+   float quality;
+   float gain;
    BiquadFilterType type;
-
-   bool isSet;
 } px_biquad_parameters;
 
 typedef struct 
@@ -51,46 +51,65 @@ typedef struct
    px_mono_biquad right;
 } px_stereo_biquad;
 
+
+// api functions
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//
+// mono
 static void px_biquad_mono_process_sample(px_mono_biquad* biquad, float* input);
+static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sampleRate, BiquadFilterType type);
+static void px_biquad_mono_set_parameters(px_mono_biquad* biquad, float in_sample_rate, float in_frequency, float in_gain, float in_quality, BiquadFilterType in_type);
+static void px_biquad_set_frequency(px_mono_biquad* biquad, float new_frequency);
+// stereo
 static void px_biquad_stereo_process_sample(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right);
+static void px_biquad_stereo_initialize(px_stereo_biquad* stereoBiquad, float sampleRate, BiquadFilterType type);
+static void px_biquad_stereo_set_parameters(px_stereo_biquad* stereoBiquad, float in_sample_rate, float in_frequency, float in_gain, float in_quality, BiquadFilterType in_type);
 
-//functional inline
-static inline double px_biquad_filter(px_mono_biquad* biquad, double input);
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//
+// inline functions
 
-static void px_biquad_mono_set_parameters(px_mono_biquad* biquad, double in_sample_rate, double in_frequency, double in_gain, double in_quality, BiquadFilterType in_type);
-static void px_biquad_stereo_set_parameters(px_stereo_biquad* stereoBiquad, double in_sample_rate, double in_frequency, double in_gain, double in_quality, BiquadFilterType in_type);
-
+static inline float px_biquad_filter(px_mono_biquad* biquad, float input);
 static inline void px_biquad_update_coefficients(const px_biquad_parameters parameters, px_biquad_coefficients* coefficients);
 
-static void px_biquad_set_frequency(px_mono_biquad* biquad, float new_frequency);
-
-
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 static void px_biquad_mono_process_sample(px_mono_biquad* biquad, float* input)
 {
-    double mono = (double)*input;
-
-    *input = (float)px_biquad_filter(biquad, mono);
+    assert(biquad);
+    float mono = *input;
+    *input = px_biquad_filter(biquad, mono);
 }
 
 static void px_biquad_stereo_process_sample(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right)
 {
-    double left = (double)*in_left;
-    double right = (double)*in_right;
+    assert(stereoBiquad);
+    float left = *in_left;
+    float right = *in_right;
 
-    *in_left = (float)px_biquad_filter(&stereoBiquad->left, left);
-    *in_right = (float)px_biquad_filter(&stereoBiquad->right, right);
+    *in_left = px_biquad_filter(&stereoBiquad->left, left);
+    *in_right = px_biquad_filter(&stereoBiquad->right, right);
 }
 
-static inline double px_biquad_filter(px_mono_biquad* biquad, double input)
+static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sampleRate, BiquadFilterType type)
 {
-    double out = input * biquad->coefficients.a0 + biquad->coefficients.z1;
-    biquad->coefficients.z1 = input * biquad->coefficients.a1 + biquad->coefficients.z2 - biquad->coefficients.b1 * out;
-    biquad->coefficients.z2 = input * biquad->coefficients.a2 - biquad->coefficients.b2 * out;
-    return out;
+    assert(biquad);
+    px_biquad_parameters parameters = { sampleRate, 100.f, 0.5f, type };
+    px_biquad_coefficients coefficients = { 1.f, 0.f, 0.0f, 0.0f, 0.0f };
+    px_biquad_update_coefficients(parameters, &coefficients);
+
+    biquad->parameters = parameters;
+    biquad->coefficients = coefficients;
 }
 
-static void px_biquad_mono_set_parameters(px_mono_biquad* biquad, double in_sample_rate, double in_frequency, double in_gain, double in_quality, BiquadFilterType in_type)
+static void px_biquad_stereo_initialize(px_stereo_biquad* stereoBiquad, float sampleRate, BiquadFilterType type)
+{
+    assert(stereoBiquad);
+    px_biquad_mono_initialize(&stereoBiquad->left, sampleRate, type);
+    px_biquad_mono_initialize(&stereoBiquad->right, sampleRate, type);
+}
+
+static void px_biquad_mono_set_parameters(px_mono_biquad* biquad, float in_sample_rate, float in_frequency, float in_gain, float in_quality, BiquadFilterType in_type)
 {
     biquad->parameters.type = in_type;
 
@@ -99,11 +118,10 @@ static void px_biquad_mono_set_parameters(px_mono_biquad* biquad, double in_samp
     biquad->parameters.gain = in_gain;
     biquad->parameters.quality = in_quality;
 
-    biquad->parameters.isSet = true;
     px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
 }
 
-static void px_biquad_stereo_set_parameters(px_stereo_biquad* stereoBiquad, double in_sample_rate, double in_frequency, double in_gain, double in_quality, BiquadFilterType in_type)
+static void px_biquad_stereo_set_parameters(px_stereo_biquad* stereoBiquad, float in_sample_rate, float in_frequency, float in_gain, float in_quality, BiquadFilterType in_type)
 {
     px_biquad_mono_set_parameters(&stereoBiquad->left, in_sample_rate, in_frequency, in_gain, in_quality, in_type);
     px_biquad_mono_set_parameters(&stereoBiquad->right, in_sample_rate, in_frequency, in_gain, in_quality, in_type);
@@ -111,19 +129,27 @@ static void px_biquad_stereo_set_parameters(px_stereo_biquad* stereoBiquad, doub
 
 static void px_biquad_set_frequency(px_mono_biquad* biquad, float new_frequency)
 {
-    biquad->parameters.frequency = (double)new_frequency;
+    biquad->parameters.frequency = new_frequency;
     px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
 }
 
-static void px_biquad_update_coefficients(const px_biquad_parameters parameters, px_biquad_coefficients* coefficients)
-{
-    assert(parameters.isSet);
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    double a0 = coefficients->a0;
-    double a1 = coefficients->a1;
-    double a2 = coefficients->a2;
-    double b1 = coefficients->b1;
-    double b2 = coefficients->b2;
+static inline float px_biquad_filter(px_mono_biquad* biquad, float input)
+{
+    float out = input * biquad->coefficients.a0 + biquad->coefficients.z1;
+    biquad->coefficients.z1 = input * biquad->coefficients.a1 + biquad->coefficients.z2 - biquad->coefficients.b1 * out;
+    biquad->coefficients.z2 = input * biquad->coefficients.a2 - biquad->coefficients.b2 * out;
+    return out;
+}
+
+static inline void px_biquad_update_coefficients(const px_biquad_parameters parameters, px_biquad_coefficients* coefficients)
+{
+    float a0 = coefficients->a0;
+    float a1 = coefficients->a1;
+    float a2 = coefficients->a2;
+    float b1 = coefficients->b1;
+    float b2 = coefficients->b2;
 
     if (parameters.frequency <= 0 || parameters.frequency != parameters.frequency)
     {
@@ -135,9 +161,9 @@ static void px_biquad_update_coefficients(const px_biquad_parameters parameters,
         return;
     }
 
-    double norm;
-    double V = pow(10, fabs(parameters.gain) / 20.0);
-    double K = tan(PI * (parameters.frequency / parameters.sample_rate));
+    float norm;
+    float V = pow(10, fabs(parameters.gain) / 20.0);
+    float K = tan(PI * (parameters.frequency / parameters.sample_rate));
 
     //  printf("%d", V);
     //  printf("%d", K);
@@ -309,3 +335,8 @@ static void px_biquad_update_coefficients(const px_biquad_parameters parameters,
     coefficients->b1 = b1;
     coefficients->b2 = b2;
 }
+
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
