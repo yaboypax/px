@@ -99,6 +99,7 @@ static inline void px_compressor_calculate_envelope(px_mono_compressor* compress
     }
 }
 
+// takes in dB value returns linear (.f)
 static inline float px_compressor_calculate_knee(px_mono_compressor* compressor, float overdB)
 {
     float kneeStart = compressor->parameters.threshold - compressor->parameters.kneeWidth / 2.0;
@@ -132,13 +133,16 @@ static inline float px_compressor_calculate_knee(px_mono_compressor* compressor,
 
 static void px_compressor_mono_process(px_mono_compressor* compressor, float* input, bool isStereo, float linkedSignal)
 {
+    // check the caclulate_envelope function
+    assert(!isnan(compressor->parameters.env));
+
     if (!isStereo)
     {
         linkedSignal = *input;
     }
 
-    linkedSignal += DC_OFFSET;
-    float keydB = lin2dB(*input);
+    linkedSignal += DC_OFFSET;   // avoid log( 0 )
+    float keydB = lin2dB(linkedSignal); 
 
     //threshold
     float overdB = keydB - compressor->parameters.threshold;
@@ -146,12 +150,21 @@ static void px_compressor_mono_process(px_mono_compressor* compressor, float* in
         overdB = 0.f;
     
     //attack/release
-    overdB += DC_OFFSET;
+    overdB += DC_OFFSET;  // avoid denormal
     px_compressor_calculate_envelope(compressor, overdB, &compressor->parameters.env);
     overdB = compressor->parameters.env - DC_OFFSET;
 
     //transfer function
-    float gainReduction = px_compressor_calculate_knee(compressor, overdB);
+    float gainReduction;
+    if (compressor->parameters.kneeWidth > 0.f)
+    {
+        gainReduction = px_compressor_calculate_knee(compressor, overdB); //return linear
+    }
+    else
+    {
+        gainReduction = dB2lin(-overdB);
+    }
+
     *input *= gainReduction;
 }
 
@@ -190,7 +203,7 @@ static void px_compressor_mono_initialize(px_mono_compressor* compressor, float 
 {
     assert(compressor);
 
-    px_compressor_parameters newParameters = {0.f, 1.f, 0.f, 0.f};
+    px_compressor_parameters newParameters = { 0.f, 1.f, 0.f, 0.f};
     compressor->parameters = newParameters;
 
     compressor->attack.sampleRate = inSampleRate;
