@@ -66,9 +66,6 @@ static void px_biquad_set_frequency(px_mono_biquad* biquad, float new_frequency)
 
 
 
-#define PI 3.141592653589793
-
-
 static void px_biquad_mono_process_sample(px_mono_biquad* biquad, float* input)
 {
     double mono = (double)*input;

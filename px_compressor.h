@@ -1,10 +1,8 @@
-
 #include <stdio.h>
-#include <tgmath.h>
 #include <stdbool.h>
 #include <assert.h>
 
-#define DC_OFFSET 1.0E-25
+#include "px_globals.h"
 
 typedef struct
 {
@@ -65,17 +63,6 @@ static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereoCom
 
 // inline functions 
 // ----------------------------------------------------------------------------------------------------------------------
-static inline float lin2dB(float lin) {
-    static const float LOG_2_DB = 8.6858896380650365530225783783321;	// 20 / ln( 10 )
-    return log(lin) * LOG_2_DB;
-}
-
-// dB -> linear conversion
-static inline float dB2lin(float dB) {
-    static const float DB_2_LOG = 0.11512925464970228420089957273422;	// ln( 10 ) / 20
-    return exp(dB * DB_2_LOG);
-}
-
 
 static inline void px_envelope_detector_calculate_coefficient(px_envelope_detector* envelope)
 {
@@ -86,7 +73,6 @@ static inline void px_envelope_detector_run(const px_envelope_detector* envelope
 {
     *state = in + envelope->coefficient * (*state - in);
 }
-
 
 
 static inline void px_compressor_calculate_envelope(const px_mono_compressor* compressor, float in, float* state)
