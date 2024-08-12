@@ -20,6 +20,7 @@ typedef struct
     float ratio;
     float env;              // over-threshold envelope
     float kneeWidth;
+    float makeupGain;
 } px_compressor_parameters;
 
 typedef struct
@@ -47,6 +48,7 @@ static void px_compressor_mono_set_ratio(px_mono_compressor* compressor, float i
 static void px_compressor_mono_set_knee(px_mono_compressor* compressor, float inKneeWidth);
 static void px_compressor_mono_set_attack(px_mono_compressor* compressor, float inAttack);
 static void px_compressor_mono_set_release(px_mono_compressor* compressor, float inRelease);
+static void px_compressor_mono_set_makeup_gain(px_mono_compressor* compressor, float inGain);
 
 // stereo
 static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor, float* inputLeft, float* inputRight);
@@ -58,7 +60,7 @@ static void px_compressor_stereo_set_ratio(px_stereo_compressor* stereoCompresso
 static void px_compressor_stereo_set_knee(px_stereo_compressor* stereoCompressor, float inKneeWidth);
 static void px_compressor_stereo_set_attack(px_stereo_compressor* stereoCompressor, float inAttack);
 static void px_compressor_stereo_set_release(px_stereo_compressor* stereoCompressor, float inRelease);
-
+static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereoCompressor, float inGain);
 // ----------------------------------------------------------------------------------------------------------------------
 
 // inline functions 
@@ -166,6 +168,10 @@ static void px_compressor_mono_process(px_mono_compressor* compressor, float* in
     }
 
     *input *= gainReduction;
+
+    //makeup gain
+    float makeup = dB2lin(compressor->parameters.makeupGain);
+    *input *= makeup;
 }
 
 static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor, float* inputLeft, float* inputRight)
@@ -304,6 +310,19 @@ static void px_compressor_stereo_set_release(px_stereo_compressor* stereoCompres
     assert(stereoCompressor);
     px_compressor_mono_set_release(&stereoCompressor->left, inRelease);
     px_compressor_mono_set_release(&stereoCompressor->right, inRelease);
+}
+
+static void px_compressor_mono_set_makeup_gain(px_mono_compressor* compressor, float inGain)
+{
+    assert(compressor);
+    compressor->parameters.makeupGain = inGain;
+}
+
+static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereoCompressor, float inGain)
+{
+    assert(stereoCompressor);
+    px_compressor_mono_set_makeup_gain(&stereoCompressor->left, inGain);
+    px_compressor_mono_set_makeup_gain(&stereoCompressor->right, inGain);
 }
 
 
