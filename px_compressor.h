@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#include "px_globals.h"
+#include "px_biquad.h"
 
 typedef struct
 {
@@ -26,12 +26,16 @@ typedef struct
     px_compressor_parameters parameters;
     px_envelope_detector attack;
     px_envelope_detector release;
+
+    px_mono_biquad sidechainFilter;
 } px_mono_compressor;
 
 typedef struct 
 {
     px_mono_compressor left;
     px_mono_compressor right;
+    
+    px_stereo_biquad sidechainFilter;
 } px_stereo_compressor;
 
 // API functions
@@ -48,6 +52,11 @@ static void px_compressor_mono_set_attack(px_mono_compressor* compressor, float 
 static void px_compressor_mono_set_release(px_mono_compressor* compressor, float inRelease);
 static void px_compressor_mono_set_makeup_gain(px_mono_compressor* compressor, float inGain);
 
+static void px_compressor_mono_set_sidechain_frequency(px_mono_compressor* compressor, float inFrequency);
+static void px_compressor_mono_set_sidechain_quality(px_mono_compressor* compressor, float inQuality);
+static void px_compressor_mono_set_sidechain_gain(px_mono_compressor* compressor, float inGain);
+static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor, BiquadFilterType inType);
+
 // stereo
 static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor, float* inputLeft, float* inputRight);
 static void px_compressor_stereo_initialize(px_stereo_compressor* stereoCompressor, float inSampleRate);
@@ -59,6 +68,12 @@ static void px_compressor_stereo_set_knee(px_stereo_compressor* stereoCompressor
 static void px_compressor_stereo_set_attack(px_stereo_compressor* stereoCompressor, float inAttack);
 static void px_compressor_stereo_set_release(px_stereo_compressor* stereoCompressor, float inRelease);
 static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereoCompressor, float inGain);
+
+static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* compressor, float inFrequency);
+static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* compressor, float inQuality);
+static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* compressor, float inGain);
+static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* compressor, BiquadFilterType type);
+
 // ----------------------------------------------------------------------------------------------------------------------
 
 // inline functions 
@@ -69,7 +84,7 @@ static inline void px_envelope_detector_run(const px_envelope_detector* envelope
 
 static inline void px_compressor_calculate_envelope(const px_mono_compressor* compressor, float in, float* state);
 static inline float px_compressor_calculate_knee(const px_mono_compressor* compressor, float overdB); // takes in dB value returns linear (.f)
-static inline float px_compressor_compress(px_mono_compressor* compressor, float input, bool isStereo, float sidechain);
+static inline float px_compressor_compress(px_mono_compressor* compressor, float input, float sidechain);
 	
 // --------------------------------------------------------------------------------------------------------
 
@@ -77,36 +92,30 @@ static void px_compressor_mono_process(px_mono_compressor* compressor, float* in
 {
     // check the caclulate_envelope function
     assert(compressor);
-
-    *input = px_compressor_compress(compressor, *input, false, 0.f);
+    //sidechain eq
+    float sidechain = *input;
+    px_biquad_mono_process(&compressor->sidechainFilter, &sidechain);
+    *input = px_compressor_compress(compressor, *input, sidechain);
 }
 
 static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor, float* inputLeft, float* inputRight)
 {
     assert(stereoCompressor);
 
-    /*
-        put here:
+    //sidechain eq
+    float sidechainLeft = *inputLeft;
+    float sidechainRight = *inputRight;
 
-        sidechain eq process
-    
-    */
+    px_biquad_stereo_process(&stereoCompressor->sidechainFilter, &sidechainLeft, &sidechainRight);
 
-    float inputAbsoluteLeft = fabsf(*inputLeft);
-    float inputAbsoluteRight = fabsf(*inputRight);
-
-    /*
-        put here:
-
-        rms smooth envelope
-    
-    */
+    float inputAbsoluteLeft = fabsf(sidechainLeft);
+    float inputAbsoluteRight = fabsf(sidechainRight); /* put here: rms smoothing */
 
    //mono sum
    float inputLink = fabsf(fmaxf(inputAbsoluteLeft, inputAbsoluteRight));
 
-  *inputLeft = px_compressor_compress(&stereoCompressor->left, *inputLeft, true, inputLink);
-  *inputRight = px_compressor_compress(&stereoCompressor->right, *inputRight, true, inputLink);
+  *inputLeft = px_compressor_compress(&stereoCompressor->left, *inputLeft, inputLink);
+  *inputRight = px_compressor_compress(&stereoCompressor->right, *inputRight, inputLink);
 
 }
 
@@ -115,6 +124,10 @@ static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor,
 static void px_compressor_mono_initialize(px_mono_compressor* compressor, float inSampleRate)
 {
     assert(compressor);
+
+    px_mono_biquad filter;
+    px_biquad_mono_initialize(&filter, inSampleRate, BIQUAD_HIGHPASS);
+    px_biquad_mono_set_frequency(&filter, 0.f);
 
     px_compressor_parameters newParameters = { 0.f, 1.f, 0.f, 0.f};
     compressor->parameters = newParameters;
@@ -132,6 +145,12 @@ static void px_compressor_mono_initialize(px_mono_compressor* compressor, float 
 static void px_compressor_stereo_initialize(px_stereo_compressor* stereoCompressor, float inSampleRate)
 {
     assert(stereoCompressor);
+    
+    px_stereo_biquad filter;
+    px_biquad_stereo_initialize(&filter, inSampleRate, BIQUAD_HIGHPASS);
+    px_biquad_stereo_set_frequency(&filter, 0.f);
+    stereoCompressor->sidechainFilter = filter;
+    
     px_compressor_mono_initialize(&stereoCompressor->left, inSampleRate);
     px_compressor_mono_initialize(&stereoCompressor->right, inSampleRate);
 
@@ -232,6 +251,54 @@ static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereoCom
     px_compressor_mono_set_makeup_gain(&stereoCompressor->right, inGain);
 }
  
+static void px_compressor_mono_set_sidechain_frequency(px_mono_compressor* compressor, float inFrequency)
+{
+    assert(compressor);
+    px_biquad_mono_set_frequency(&compressor->sidechainFilter, inFrequency);
+}
+
+static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* stereoCompressor, float inFrequency)
+{
+    assert(stereoCompressor);
+    px_biquad_stereo_set_frequency(&stereoCompressor->sidechainFilter, inFrequency);
+}
+
+ 
+static void px_compressor_mono_set_sidechain_quality(px_mono_compressor* compressor, float inQuality)
+{
+    assert(compressor);
+    px_biquad_mono_set_quality(&compressor->sidechainFilter, inQuality);
+}
+
+static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* stereoCompressor, float inQuality)
+{
+    assert(stereoCompressor);
+    px_biquad_stereo_set_quality(&stereoCompressor->sidechainFilter, inQuality);
+}
+
+static void px_compressor_mono_set_sidechain_gain(px_mono_compressor* compressor, float inGain)
+{
+    assert(compressor);
+    px_biquad_mono_set_gain(&compressor->sidechainFilter, inGain);
+}
+
+static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* stereoCompressor, float inGain)
+{
+    assert(stereoCompressor);
+    px_biquad_stereo_set_gain(&stereoCompressor->sidechainFilter, inGain);
+}
+
+static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor, BiquadFilterType inType)
+{
+    assert(compressor);
+    px_biquad_mono_set_type(&compressor->sidechainFilter, inType);
+}
+
+static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* stereoCompressor, BiquadFilterType inType)
+{
+    assert(stereoCompressor);
+    px_biquad_stereo_set_type(&stereoCompressor->sidechainFilter, inType);
+}
 // ----------------------------------------------------------------------------------------------------------------------
 
 static inline void px_envelope_detector_calculate_coefficient(px_envelope_detector* envelope)
@@ -288,15 +355,10 @@ static inline float px_compressor_calculate_knee(const px_mono_compressor* compr
 }
 
 
-static inline float px_compressor_compress(px_mono_compressor* compressor, float input, bool isStereo, float sidechain)
+static inline float px_compressor_compress(px_mono_compressor* compressor, float input, float sidechain)
 {
     // if hit, check the caclulate_envelope function
     assert(!isnan(compressor->parameters.env));
-
-    if (!isStereo)
-    {
-        sidechain = input;
-    }
 
     sidechain += DC_OFFSET;   // avoid log( 0 )
     float keydB = lin2dB(sidechain); 
