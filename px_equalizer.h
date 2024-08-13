@@ -4,9 +4,9 @@
 
 
 typedef struct {
-    px_mono_biquad filterBank[MAX_BANDS];
-    float sampleRate;
-    int numBands;
+    px_mono_biquad filter_bank[MAX_BANDS];
+    float sample_rate;
+    int num_bands;
 } px_mono_equalizer;
 
 typedef struct {
@@ -17,55 +17,55 @@ typedef struct {
 static void px_equalizer_mono_process(px_mono_equalizer* equalizer, float* input)
 {
      assert(equalizer);
-     for (int i = 0; i < equalizer->numBands; ++i)
+     for (int i = 0; i < equalizer->num_bands; ++i)
      {
-     	px_biquad_mono_process(&equalizer->filterBank[i], input);
+     	px_biquad_mono_process(&equalizer->filter_bank[i], input);
      }
 }
 
-static void px_equalizer_stereo_process(px_stereo_equalizer* stereoEqualizer, float* inputLeft, float* inputRight)
+static void px_equalizer_stereo_process(px_stereo_equalizer* stereo_equalizer, float* input_left, float* input_right)
 {
-    assert(stereoEqualizer);
-    px_equalizer_mono_process(&stereoEqualizer->left, inputLeft);
-    px_equalizer_mono_process(&stereoEqualizer->right, inputRight);
+    assert(stereo_equalizer);
+    px_equalizer_mono_process(&stereo_equalizer->left, input_left);
+    px_equalizer_mono_process(&stereo_equalizer->right, input_right);
 }
 
-static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sampleRate)
+static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sample_rate)
 {
 	assert(equalizer);
-	equalizer->sampleRate = sampleRate;
-	equalizer->numBands = 0;
+	equalizer->sample_rate = sample_rate;
+	equalizer->num_bands = 0;
 }
 
-static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereoEqualizer, float sampleRate)
+static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereo_equalizer, float sample_rate)
 {
-    assert(stereoEqualizer);
-    px_equalizer_mono_initialize(&stereoEqualizer->left, sampleRate);
-    px_equalizer_mono_initialize(&stereoEqualizer->right, sampleRate);
+    assert(stereo_equalizer);
+    px_equalizer_mono_initialize(&stereo_equalizer->left, sample_rate);
+    px_equalizer_mono_initialize(&stereo_equalizer->right, sample_rate);
 }
 
-static void px_equalizer_mono_add_band(px_mono_equalizer* equalizer, float frequency, float quality, float gain, BiquadFilterType type)
+static void px_equalizer_mono_add_band(px_mono_equalizer* equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type)
 {
     assert(equalizer);
-    if (equalizer->numBands + 1 == MAX_BANDS)
+    if (equalizer->num_bands + 1 == MAX_BANDS)
     {
 	printf("max bands reached");
 	return;
     }
-    px_mono_biquad newFilter;
-    px_biquad_mono_initialize(&newFilter, equalizer->sampleRate, type);
-    px_biquad_mono_set_frequency(&newFilter, frequency);
-    px_biquad_mono_set_quality(&newFilter, quality);
-    px_biquad_mono_set_gain(&newFilter, gain);
+    px_mono_biquad new_filter;
+    px_biquad_mono_initialize(&new_filter, equalizer->sample_rate, type);
+    px_biquad_mono_set_frequency(&new_filter, frequency);
+    px_biquad_mono_set_quality(&new_filter, quality);
+    px_biquad_mono_set_gain(&new_filter, gain);
 
-    equalizer->filterBank[equalizer->numBands] = newFilter;
-    equalizer->numBands++;
+    equalizer->filter_bank[equalizer->num_bands] = new_filter;
+    equalizer->num_bands++;
 }
 
-static void px_stereo_equalizer_add_band(px_stereo_equalizer* stereoEqualizer, float frequency, float quality, float gain, BiquadFilterType type)
+static void px_stereo_equalizer_add_band(px_stereo_equalizer* stereo_equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type)
 {
-    assert(stereoEqualizer);
-    px_equalizer_mono_add_band(&stereoEqualizer->left, frequency, quality, gain, type);
-    px_equalizer_mono_add_band(&stereoEqualizer->right, frequency, quality, gain, type);
+    assert(stereo_equalizer);
+    px_equalizer_mono_add_band(&stereo_equalizer->left, frequency, quality, gain, type);
+    px_equalizer_mono_add_band(&stereo_equalizer->right, frequency, quality, gain, type);
 }
 

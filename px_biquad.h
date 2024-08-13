@@ -17,7 +17,7 @@ typedef enum {
    BIQUAD_LOWSHELF_NOQ,
    BIQUAD_HIGHSHELF_NOQ,
    BIQUAD_ALLPASS
-} BiquadFilterType;
+} BIQUAD_FILTER_TYPE;
 
 typedef struct 
 {
@@ -36,7 +36,7 @@ typedef struct
    float frequency;
    float quality;
    float gain;
-   BiquadFilterType type;
+   BIQUAD_FILTER_TYPE type;
 } px_biquad_parameters;
 
 typedef struct 
@@ -65,22 +65,22 @@ static inline void px_biquad_update_coefficients(const px_biquad_parameters para
 // mono
 
 static void px_biquad_mono_process(px_mono_biquad* biquad, float* input);
-static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sampleRate, BiquadFilterType type);
+static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
 
-static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float inFrequency);
-static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float inQuality);
-static void px_biquad_mono_set_gain(px_mono_biquad* biquad, float inGain);
-static void px_biquad_mono_set_type(px_mono_biquad* biquad, BiquadFilterType inType);
+static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float in_frequency);
+static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float in_quality);
+static void px_biquad_mono_set_gain(px_mono_biquad* biquad, float in_gain);
+static void px_biquad_mono_set_type(px_mono_biquad* biquad, BIQUAD_FILTER_TYPE in_type);
 
 // stereo
 
-static void px_biquad_stereo_process(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right);
-static void px_biquad_stereo_initialize(px_stereo_biquad* stereoBiquad, float sampleRate, BiquadFilterType type);
+static void px_biquad_stereo_process(px_stereo_biquad* stereo_biquad, float* in_left, float* in_right);
+static void px_biquad_stereo_initialize(px_stereo_biquad* stereo_biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
 
-static void px_biquad_stereo_set_frequency(px_stereo_biquad* biquad, float inFrequency);
-static void px_biquad_stereo_set_quality(px_stereo_biquad* biquad, float inQuality);
-static void px_biquad_stereo_set_gain(px_stereo_biquad* biquad, float inGain);
-static void px_biquad_stereo_set_type(px_stereo_biquad* biquad, BiquadFilterType inType);
+static void px_biquad_stereo_set_frequency(px_stereo_biquad* biquad, float in_frequency);
+static void px_biquad_stereo_set_quality(px_stereo_biquad* biquad, float in_quality);
+static void px_biquad_stereo_set_gain(px_stereo_biquad* biquad, float in_gain);
+static void px_biquad_stereo_set_type(px_stereo_biquad* biquad, BIQUAD_FILTER_TYPE in_type);
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -91,20 +91,20 @@ static void px_biquad_mono_process(px_mono_biquad* biquad, float* input)
     *input = px_biquad_filter(biquad, mono);
 }
 
-static void px_biquad_stereo_process(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right)
+static void px_biquad_stereo_process(px_stereo_biquad* stereo_biquad, float* in_left, float* in_right)
 {
-    assert(stereoBiquad);
+    assert(stereo_biquad);
     float left = *in_left;
     float right = *in_right;
 
-    *in_left = px_biquad_filter(&stereoBiquad->left, left);
-    *in_right = px_biquad_filter(&stereoBiquad->right, right);
+    *in_left = px_biquad_filter(&stereo_biquad->left, left);
+    *in_right = px_biquad_filter(&stereo_biquad->right, right);
 }
 
-static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sampleRate, BiquadFilterType type)
+static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sample_rate, BIQUAD_FILTER_TYPE type)
 {
     assert(biquad);
-    px_biquad_parameters parameters = { sampleRate, 100.f, 0.5f, 0.f, type };
+    px_biquad_parameters parameters = { sample_rate, 100.f, 0.5f, 0.f, type };
     px_biquad_coefficients coefficients = { 1.f, 0.f, 0.0f, 0.0f, 0.0f };
     px_biquad_update_coefficients(parameters, &coefficients);
 
@@ -112,67 +112,67 @@ static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sampleRate, 
     biquad->coefficients = coefficients;
 }
 
-static void px_biquad_stereo_initialize(px_stereo_biquad* stereoBiquad, float sampleRate, BiquadFilterType type)
+static void px_biquad_stereo_initialize(px_stereo_biquad* stereo_biquad, float sample_rate, BIQUAD_FILTER_TYPE type)
 {
-    assert(stereoBiquad);
-    px_biquad_mono_initialize(&stereoBiquad->left, sampleRate, type);
-    px_biquad_mono_initialize(&stereoBiquad->right, sampleRate, type);
+    assert(stereo_biquad);
+    px_biquad_mono_initialize(&stereo_biquad->left, sample_rate, type);
+    px_biquad_mono_initialize(&stereo_biquad->right, sample_rate, type);
 }
 
-static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float inFrequency)
+static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float in_frequency)
 {
     assert(biquad);
-    biquad->parameters.frequency = inFrequency;
+    biquad->parameters.frequency = in_frequency;
     px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
 }
 
-static void px_biquad_stereo_set_frequency(px_stereo_biquad* stereoBiquad, float inFrequency)
+static void px_biquad_stereo_set_frequency(px_stereo_biquad* stereo_biquad, float in_frequency)
 {
-    assert(stereoBiquad);
-    px_biquad_mono_set_frequency(&stereoBiquad->left, inFrequency);
-    px_biquad_mono_set_frequency(&stereoBiquad->right, inFrequency);
+    assert(stereo_biquad);
+    px_biquad_mono_set_frequency(&stereo_biquad->left, in_frequency);
+    px_biquad_mono_set_frequency(&stereo_biquad->right, in_frequency);
 }
 
-static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float inQuality)
+static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float in_quality)
 {
     assert(biquad);
-    biquad->parameters.quality = inQuality;
+    biquad->parameters.quality = in_quality;
     px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
 }
 
-static void px_biquad_stereo_set_quality(px_stereo_biquad* stereoBiquad, float inQuality)
+static void px_biquad_stereo_set_quality(px_stereo_biquad* stereo_biquad, float in_quality)
 {
-    assert(stereoBiquad);
-    px_biquad_mono_set_quality(&stereoBiquad->left, inQuality);
-    px_biquad_mono_set_quality(&stereoBiquad->right, inQuality);
+    assert(stereo_biquad);
+    px_biquad_mono_set_quality(&stereo_biquad->left, in_quality);
+    px_biquad_mono_set_quality(&stereo_biquad->right, in_quality);
 }
 
-static void px_biquad_mono_set_gain(px_mono_biquad* biquad, float inGain)
+static void px_biquad_mono_set_gain(px_mono_biquad* biquad, float in_gain)
 {
     assert(biquad);
-    biquad->parameters.gain = inGain;
+    biquad->parameters.gain = in_gain;
     px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
 }
 
-static void px_biquad_stereo_set_gain(px_stereo_biquad* stereoBiquad, float inGain)
+static void px_biquad_stereo_set_gain(px_stereo_biquad* stereo_biquad, float in_gain)
 {
-    assert(stereoBiquad);
-    px_biquad_mono_set_gain(&stereoBiquad->left, inGain);
-    px_biquad_mono_set_gain(&stereoBiquad->right, inGain);
+    assert(stereo_biquad);
+    px_biquad_mono_set_gain(&stereo_biquad->left, in_gain);
+    px_biquad_mono_set_gain(&stereo_biquad->right, in_gain);
 }
 
-static void px_biquad_mono_set_type(px_mono_biquad* biquad, BiquadFilterType inType)
+static void px_biquad_mono_set_type(px_mono_biquad* biquad, BIQUAD_FILTER_TYPE in_type)
 {
     assert(biquad);
-    biquad->parameters.type = inType;
+    biquad->parameters.type = in_type;
     px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
 }
 
-static void px_biquad_stereo_set_type(px_stereo_biquad* stereoBiquad, BiquadFilterType inType)
+static void px_biquad_stereo_set_type(px_stereo_biquad* stereo_biquad, BIQUAD_FILTER_TYPE in_type)
 {
-    assert(stereoBiquad);
-    px_biquad_mono_set_type(&stereoBiquad->left, inType);
-    px_biquad_mono_set_type(&stereoBiquad->right, inType);
+    assert(stereo_biquad);
+    px_biquad_mono_set_type(&stereo_biquad->left, in_type);
+    px_biquad_mono_set_type(&stereo_biquad->right, in_type);
 }
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
