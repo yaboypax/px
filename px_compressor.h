@@ -37,7 +37,7 @@ typedef struct
 // API functions
 // ----------------------------------------------------------------------------------------------------------------------
 // mono
-static void px_compressor_mono_process(px_mono_compressor* compressor, float* input, bool isStereo, float linkedSignal);
+static void px_compressor_mono_process(px_mono_compressor* compressor, float* input);
 static void px_compressor_mono_initialize(px_mono_compressor* compressor, float inSampleRate);
 
 static void px_compressor_mono_set_parameters(px_mono_compressor* compressor, px_compressor_parameters inParameters);
@@ -64,100 +64,21 @@ static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereoCom
 // inline functions 
 // ----------------------------------------------------------------------------------------------------------------------
 
-static inline void px_envelope_detector_calculate_coefficient(px_envelope_detector* envelope)
-{
-    envelope->coefficient = exp(-1000.f / (envelope->timeConstant * envelope->sampleRate));
-}
+static inline void px_envelope_detector_calculate_coefficient(px_envelope_detector* envelope);
+static inline void px_envelope_detector_run(const px_envelope_detector* envelope, float in, float* state);
 
-static inline void px_envelope_detector_run(const px_envelope_detector* envelope, float in, float* state)
-{
-    *state = in + envelope->coefficient * (*state - in);
-}
-
-
-static inline void px_compressor_calculate_envelope(const px_mono_compressor* compressor, float in, float* state)
-{
-    if (in > *state)
-    {
-        px_envelope_detector_run(&compressor->attack, in, state);
-    }
-    else
-    {
-        px_envelope_detector_run(&compressor->release, in, state);
-    }
-}
-
-// takes in dB value returns linear (.f)
-static inline float px_compressor_calculate_knee(const px_mono_compressor* compressor, float overdB)
-{
-    float kneeStart = compressor->parameters.threshold - compressor->parameters.kneeWidth / 2.0;
-    float kneeEnd = compressor->parameters.threshold + compressor->parameters.kneeWidth / 2.0;
-
-    
-    float gain = 1.0;
-        // no compression
-    if (overdB <= kneeStart) {
-        gain = 1.0;
-    }
-    else if (overdB >= kneeEnd) {
-        // Full compression above the knee
-        float reducedLevel = overdB / compressor->parameters.ratio;
-        gain = dB2lin(-(overdB - reducedLevel));
-    }
-    else {
-        // soft knee
-        // Within the knee, interpolate the gain reduction
-        float blend = (overdB - kneeStart) / compressor->parameters.kneeWidth; 
-        float uncompressedGain = 1.0;
-        float reducedLevel = overdB / compressor->parameters.ratio;
-        float compressedGain = dB2lin(-(overdB - reducedLevel));
-        gain = uncompressedGain + blend * (compressedGain - uncompressedGain);
-    }
-
-    return gain;
-}
-
+static inline void px_compressor_calculate_envelope(const px_mono_compressor* compressor, float in, float* state);
+static inline float px_compressor_calculate_knee(const px_mono_compressor* compressor, float overdB); // takes in dB value returns linear (.f)
+static inline float px_compressor_compress(px_mono_compressor* compressor, float input, bool isStereo, float sidechain);
+	
 // --------------------------------------------------------------------------------------------------------
 
-static void px_compressor_mono_process(px_mono_compressor* compressor, float* input, bool isStereo, float linkedSignal)
+static void px_compressor_mono_process(px_mono_compressor* compressor, float* input)
 {
     // check the caclulate_envelope function
-    assert(!isnan(compressor->parameters.env));
+    assert(compressor);
 
-    if (!isStereo)
-    {
-        linkedSignal = *input;
-    }
-
-    linkedSignal += DC_OFFSET;   // avoid log( 0 )
-    float keydB = lin2dB(linkedSignal); 
-
-    //threshold
-    float overdB = keydB - compressor->parameters.threshold;
-    if (overdB < 0.f)
-        overdB = 0.f;
-    
-    //attack/release
-    overdB += DC_OFFSET;  // avoid denormal
-    px_compressor_calculate_envelope(compressor, overdB, &compressor->parameters.env);
-    overdB = compressor->parameters.env - DC_OFFSET;
-
-    //transfer function
-    float gainReduction;
-    if (compressor->parameters.kneeWidth > 0.f)
-    {
-        gainReduction = px_compressor_calculate_knee(compressor, overdB); //return linear
-    }
-    else
-    {
-        gainReduction = dB2lin(-overdB);
-    }
-
-    *input *= gainReduction;
-
-    //makeup gain
-    float makeup = dB2lin(compressor->parameters.makeupGain);
-    *input *= makeup;
+    *input = px_compressor_compress(compressor, *input, false, 0.f);
 }
 
 static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor, float* inputLeft, float* inputRight)
@@ -184,8 +105,8 @@ static void px_compressor_stereo_process(px_stereo_compressor* stereoCompressor,
    //mono sum
    float inputLink = fabsf(fmaxf(inputAbsoluteLeft, inputAbsoluteRight));
 
-   px_compressor_mono_process(&stereoCompressor->left, inputLeft, true, inputLink);
-   px_compressor_mono_process(&stereoCompressor->right, inputRight, true, inputLink);
+  *inputLeft = px_compressor_compress(&stereoCompressor->left, *inputLeft, true, inputLink);
+  *inputRight = px_compressor_compress(&stereoCompressor->right, *inputRight, true, inputLink);
 
 }
 
@@ -310,7 +231,105 @@ static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereoCom
     px_compressor_mono_set_makeup_gain(&stereoCompressor->left, inGain);
     px_compressor_mono_set_makeup_gain(&stereoCompressor->right, inGain);
 }
+ 
+// ----------------------------------------------------------------------------------------------------------------------
 
+static inline void px_envelope_detector_calculate_coefficient(px_envelope_detector* envelope)
+{
+    envelope->coefficient = exp(-1000.f / (envelope->timeConstant * envelope->sampleRate));
+}
+
+static inline void px_envelope_detector_run(const px_envelope_detector* envelope, float in, float* state)
+{
+    *state = in + envelope->coefficient * (*state - in);
+}
+
+
+static inline void px_compressor_calculate_envelope(const px_mono_compressor* compressor, float in, float* state)
+{
+    if (in > *state)
+    {
+        px_envelope_detector_run(&compressor->attack, in, state);
+    }
+    else
+    {
+        px_envelope_detector_run(&compressor->release, in, state);
+    }
+}
+
+// takes in dB value returns linear (.f)
+static inline float px_compressor_calculate_knee(const px_mono_compressor* compressor, float overdB)
+{
+    float kneeStart = compressor->parameters.threshold - compressor->parameters.kneeWidth / 2.0;
+    float kneeEnd = compressor->parameters.threshold + compressor->parameters.kneeWidth / 2.0;
+
+    
+    float gain = 1.0;
+        // no compression
+    if (overdB <= kneeStart) {
+        gain = 1.0;
+    }
+    else if (overdB >= kneeEnd) {
+        // Full compression above the knee
+        float reducedLevel = overdB / compressor->parameters.ratio;
+        gain = dB2lin(-(overdB - reducedLevel));
+    }
+    else {
+        // soft knee
+        // Within the knee, interpolate the gain reduction
+        float blend = (overdB - kneeStart) / compressor->parameters.kneeWidth; 
+        float uncompressedGain = 1.0;
+        float reducedLevel = overdB / compressor->parameters.ratio;
+        float compressedGain = dB2lin(-(overdB - reducedLevel));
+        gain = uncompressedGain + blend * (compressedGain - uncompressedGain);
+    }
+
+    return gain;
+}
+
+
+static inline float px_compressor_compress(px_mono_compressor* compressor, float input, bool isStereo, float sidechain)
+{
+    // if hit, check the caclulate_envelope function
+    assert(!isnan(compressor->parameters.env));
+
+    if (!isStereo)
+    {
+        sidechain = input;
+    }
+
+    sidechain += DC_OFFSET;   // avoid log( 0 )
+    float keydB = lin2dB(sidechain); 
+
+    //threshold
+    float overdB = keydB - compressor->parameters.threshold;
+    if (overdB < 0.f)
+        overdB = 0.f;
+    
+    //attack/release
+    overdB += DC_OFFSET;  // avoid denormal
+    px_compressor_calculate_envelope(compressor, overdB, &compressor->parameters.env);
+    overdB = compressor->parameters.env - DC_OFFSET;
+
+    //transfer function
+    float gainReduction;
+    if (compressor->parameters.kneeWidth > 0.f)
+    {
+        gainReduction = px_compressor_calculate_knee(compressor, overdB); //return linear
+    }
+    else
+    {
+        gainReduction = dB2lin(-overdB);
+    }
+
+    float output = input * gainReduction;
+
+    //makeup gain
+    float makeup = dB2lin(compressor->parameters.makeupGain);
+    output *= makeup;
+    return output;
+
+}	
 
 
 
