@@ -64,7 +64,7 @@ static inline void px_biquad_update_coefficients(const px_biquad_parameters para
 
 // mono
 
-static void px_biquad_mono_process_sample(px_mono_biquad* biquad, float* input);
+static void px_biquad_mono_process(px_mono_biquad* biquad, float* input);
 static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sampleRate, BiquadFilterType type);
 
 static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float inFrequency);
@@ -74,7 +74,7 @@ static void px_biquad_mono_set_type(px_mono_biquad* biquad, BiquadFilterType inT
 
 // stereo
 
-static void px_biquad_stereo_process_sample(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right);
+static void px_biquad_stereo_process(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right);
 static void px_biquad_stereo_initialize(px_stereo_biquad* stereoBiquad, float sampleRate, BiquadFilterType type);
 
 static void px_biquad_stereo_set_frequency(px_stereo_biquad* biquad, float inFrequency);
@@ -84,14 +84,14 @@ static void px_biquad_stereo_set_type(px_stereo_biquad* biquad, BiquadFilterType
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-static void px_biquad_mono_process_sample(px_mono_biquad* biquad, float* input)
+static void px_biquad_mono_process(px_mono_biquad* biquad, float* input)
 {
     assert(biquad);
     float mono = *input;
     *input = px_biquad_filter(biquad, mono);
 }
 
-static void px_biquad_stereo_process_sample(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right)
+static void px_biquad_stereo_process(px_stereo_biquad* stereoBiquad, float* in_left, float* in_right)
 {
     assert(stereoBiquad);
     float left = *in_left;
