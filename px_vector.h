@@ -81,6 +81,24 @@ static void px_vector_pop_back(px_vector* vector)
     }
 }
 
+static void* px_vector_get(px_vector* vector, size_t index)
+{
+    assert(vector);
+    void* ptr;
+    
+    if (index < vector->size)
+    {
+        ptr = vector->data[index];
+    }
+    else
+    {
+        ptr = NULL;	
+    }
+    
+    return ptr;
+
+}
+
 static void px_vector_copy(px_vector* dest_vector, px_vector* source_vector)
 {
     assert(dest_vector && source_vector);
