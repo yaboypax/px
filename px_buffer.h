@@ -15,11 +15,16 @@ typedef struct
 
     px_vector vector[MAX_CHANNELS];
     bool is_filled;
-} px_float_buffer;
+} px_buffer;
 
-#define BUFFER_TYPE px_float_buffer
+#ifdef PX_FLOAT_BUFFER
+	#define BUFFER_TYPE float
+#elif PX_DOUBLE_BUFFER
+	#define BUFFER_TYPE double
+#endif
 
-static void px_buffer_init(BUFFER_TYPE* buffer, int num_samples, int num_channels)
+
+tatic void px_buffer_init(px_buffer* buffer, int num_samples, int num_channels)
 {
     if (!buffer)
         return;
@@ -35,8 +40,8 @@ static void px_buffer_init(BUFFER_TYPE* buffer, int num_samples, int num_channel
 
         for (int i = 0; i < num_samples; ++i)
         {
-            float value = 1.f;
-	    float* ptr = &value;
+            BUFFER_TYPE value = 1.f;
+	    BUFFER_TYPE* ptr = &value;
 	    px_vector_push(&buffer->vector[channel], ptr);
         }
     }
@@ -44,7 +49,7 @@ static void px_buffer_init(BUFFER_TYPE* buffer, int num_samples, int num_channel
     buffer->is_filled = false;
 }
 
-static void px_buffer_set_sample(BUFFER_TYPE* buffer, int channel, int sample_position, float value)
+static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value)
 {
     if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
     {
@@ -52,23 +57,23 @@ static void px_buffer_set_sample(BUFFER_TYPE* buffer, int channel, int sample_po
         return;
     }
 
-    float* ptr = &value;
+    BUFFER_TYPE* ptr = &value;
     buffer->vector[channel].data[sample_position] = ptr;
 
 }
 
-static float px_buffer_get_sample(BUFFER_TYPE* buffer, int channel, int sample_position)
+static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int sample_position)
 {
     if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
         return 0.f;
     }
-    float* ptr = buffer->vector[channel].data[sample_position];
+    BUFFER_TYPE* ptr = buffer->vector[channel].data[sample_position];
     return *ptr;
 }
 
-static void px_buffer_gainf(BUFFER_TYPE* buffer, float in_gain)
+static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
 {
 
     assert(buffer);
@@ -77,7 +82,7 @@ static void px_buffer_gainf(BUFFER_TYPE* buffer, float in_gain)
     {
         for (int i = 0; i < buffer->num_samples; ++i)
         {
-            float* ptr = buffer->vector[channel].data[i];
+            BUFFER_TYPE* ptr = buffer->vector[channel].data[i];
 	    *ptr *= in_gain;
 	    buffer->vector[channel].data[i] = ptr;
         }
