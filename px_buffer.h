@@ -52,19 +52,20 @@ static void px_buffer_set_sample(BUFFER_TYPE* buffer, int channel, int sample_po
         return;
     }
 
-    buffer->vector[channel].data[sample_position] = &value;
+    float* ptr = &value;
+    buffer->vector[channel].data[sample_position] = ptr;
 
 }
 
-static float* px_buffer_get_sample(BUFFER_TYPE* buffer, int channel, int sample_position)
+static float px_buffer_get_sample(BUFFER_TYPE* buffer, int channel, int sample_position)
 {
     if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
-        return NULL;
+        return 0.f;
     }
-
-    return (float*)buffer->vector[channel].data[sample_position];
+    float* ptr = buffer->vector[channel].data[sample_position];
+    return *ptr;
 }
 
 static void px_buffer_gainf(BUFFER_TYPE* buffer, float in_gain)
@@ -76,7 +77,7 @@ static void px_buffer_gainf(BUFFER_TYPE* buffer, float in_gain)
     {
         for (int i = 0; i < buffer->num_samples; ++i)
         {
-            float* ptr = (float*)buffer->vector[channel].data[i];
+            float* ptr = buffer->vector[channel].data[i];
 	    *ptr *= in_gain;
 	    buffer->vector[channel].data[i] = ptr;
         }
