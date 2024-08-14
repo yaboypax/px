@@ -13,7 +13,7 @@ typedef struct
     int num_samples;
     int num_channels;
 
-    px_fvector vector[MAX_CHANNELS];
+    px_vector vector[MAX_CHANNELS];
     bool is_filled;
 } px_float_buffer;
 
@@ -35,7 +35,9 @@ static void px_buffer_init(BUFFER_TYPE* buffer, int num_samples, int num_channel
 
         for (int i = 0; i < num_samples; ++i)
         {
-            px_fvector_push(&buffer->vector[channel], 1.f);
+            float value = 1.f;
+	    float* ptr = &value;
+	    px_vector_push(&buffer->vector[channel], ptr);
         }
     }
 
@@ -50,7 +52,7 @@ static void px_buffer_set_sample(BUFFER_TYPE* buffer, int channel, int sample_po
         return;
     }
 
-    buffer->vector[channel].data[sample_position] = value;
+    buffer->vector[channel].data[sample_position] = &value;
 
 }
 
@@ -62,7 +64,7 @@ static float* px_buffer_get_sample(BUFFER_TYPE* buffer, int channel, int sample_
         return NULL;
     }
 
-    return &buffer->vector[channel].data[sample_position];
+    return (float*)buffer->vector[channel].data[sample_position];
 }
 
 static void px_buffer_gainf(BUFFER_TYPE* buffer, float in_gain)
@@ -74,7 +76,9 @@ static void px_buffer_gainf(BUFFER_TYPE* buffer, float in_gain)
     {
         for (int i = 0; i < buffer->num_samples; ++i)
         {
-            buffer->vector[channel].data[i] * in_gain;
+            float* ptr = (float*)buffer->vector[channel].data[i];
+	    *ptr *= in_gain;
+	    buffer->vector[channel].data[i] = ptr;
         }
     }
 }

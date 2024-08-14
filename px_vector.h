@@ -3,14 +3,128 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <string.h>
+
+
+/* -------------------------------------------------------------------------
+
+
+    type generic vector
+
+
+
+   -------------------------------------------------------------------------*/
+
+typedef struct {
+    size_t size;
+    size_t capacity;
+    void** data;
+} px_vector;
+
+static px_vector* px_vector_create();
+static void px_vector_destroy(px_vector* vector);
+
+static void px_vector_push(px_vector* vector, void* value);
+static void px_vector_pop_back(px_vector* vector);
+
+static void px_vector_copy(px_vector* dest_vector, px_vector* source_vector);
+static void px_vector_resize(px_vector* vector, const size_t new_size);
+
+// ----------------------------------------------------------------------------
+
+static px_vector* px_vector_create()
+{
+    px_vector* vector = (px_vector*)malloc(sizeof(px_vector));
+    assert(vector);
+
+    vector->data = NULL;
+    vector->size = 0;
+    vector->capacity = 0;
+
+    return vector;
+}
+
+static void px_vector_destroy(px_vector* vector)
+{
+    if (vector)
+    {
+        free(vector->data);
+        free(vector);
+    }
+}
+
+static void px_vector_push(px_vector* vector, void* value)
+{
+    assert(vector);
+
+    if (vector->size == vector->capacity) 
+    {
+        size_t new_capacity = (vector->capacity == 0) ? 1 : vector->capacity * 2;
+        void** new_data = (void**)realloc(vector->data, sizeof(void*) * new_capacity);
+        if (new_data)
+	{
+            vector->data = new_data;
+            vector->capacity = new_capacity;
+        }
+    }
+
+    vector->data[vector->size] = value;
+    vector->size++;
+}
+
+static void px_vector_pop_back(px_vector* vector)
+{
+    assert(vector);
+    if (vector->size > 0)
+    {
+        vector->size--;
+        vector->data[vector->size] = NULL;
+    }
+}
+
+static void px_vector_copy(px_vector* dest_vector, px_vector* source_vector)
+{
+    assert(dest_vector && source_vector);
+
+    dest_vector->size = source_vector->size;
+    dest_vector->capacity = source_vector->capacity;
+
+    void** new_data = (void**)malloc(sizeof(void*) * dest_vector->capacity);
+    if (new_data) 
+    {
+        memcpy(new_data, source_vector->data, sizeof(void*) * source_vector->size);
+        dest_vector->data = new_data;
+    }
+}
+
+static void px_vector_resize(px_vector* vector, const size_t new_size)
+{
+    if (!vector)
+        return;
+    if (new_size == vector->size)
+        return;
+
+    if (new_size > vector->capacity)
+    {
+        size_t new_capacity = new_size * 2;
+        void** new_data = (void**)realloc(vector->data, sizeof(void*) * new_capacity);
+        if (new_data)
+	{
+            vector->data = new_data;
+            vector->capacity = new_capacity;
+        }
+    }
+
+    vector->size = new_size;
+}
+
+
+
+
 /* -------------------------------------------------------------------------
 
 
     float vector used in px_buffer
 
-
-
-   -------------------------------------------------------------------------*/
 
 typedef struct 
 {
@@ -126,4 +240,5 @@ static void px_fvector_resize(px_fvector* vector, const size_t newSize)
     return;
 }
 
+   -------------------------------------------------------------------------*/
 
