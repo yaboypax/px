@@ -21,10 +21,14 @@ typedef struct {
 } px_vector;
 
 static px_vector* px_vector_create();
+static void px_vector_initialize(px_vector* vector);
 static void px_vector_destroy(px_vector* vector);
 
 static void px_vector_push(px_vector* vector, void* value);
-static void px_vector_pop_back(px_vector* vector);
+static void px_vector_pop(px_vector* vector);
+
+static void* px_vector_get(px_vector* vector, size_t index);
+static void px_vector_remove(px_vector* vector, size_t index);
 
 static void px_vector_copy(px_vector* dest_vector, px_vector* source_vector);
 static void px_vector_resize(px_vector* vector, const size_t new_size);
@@ -34,13 +38,17 @@ static void px_vector_resize(px_vector* vector, const size_t new_size);
 static px_vector* px_vector_create()
 {
     px_vector* vector = (px_vector*)malloc(sizeof(px_vector));
+    px_vector_initialize(vector);
+    return vector;
+}
+
+static void px_vector_initialize(px_vector* vector)
+{
     assert(vector);
 
     vector->data = NULL;
     vector->size = 0;
     vector->capacity = 0;
-
-    return vector;
 }
 
 static void px_vector_destroy(px_vector* vector)
@@ -71,7 +79,7 @@ static void px_vector_push(px_vector* vector, void* value)
     vector->size++;
 }
 
-static void px_vector_pop_back(px_vector* vector)
+static void px_vector_pop(px_vector* vector)
 {
     assert(vector);
     if (vector->size > 0)
@@ -92,10 +100,29 @@ static void* px_vector_get(px_vector* vector, size_t index)
     }
     else
     {
+	printf("OUT OF RANGE");
         ptr = NULL;	
     }
     
     return ptr;
+}
+
+static void px_vector_remove(px_vector* vector , size_t index)
+{
+    assert(vector);
+    if (index < vector->size)
+    {
+	vector->data[index] = NULL;
+	for (size_t i = index; i < (vector->size - 1); ++i)
+    	{
+	    vector->data[i] = vector->data[i+1];
+	}
+	vector->size--;
+    }
+    else
+    {
+	printf("OUT OF RANGE");
+    }    
 
 }
 
