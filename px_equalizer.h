@@ -18,6 +18,21 @@ typedef struct
    int num_bands;
 } px_stereo_equalizer;
 
+
+// ----------------------------------------------------------------------------------------------------
+
+
+static void px_equalizer_mono_process(px_mono_equalizer* equalizer, float* input);
+static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sample_rate);
+static void px_equalizer_mono_add_band(px_mono_equalizer* equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type);
+
+static void px_equalizer_stereo_process(px_stereo_equalizer* stereo_equalizer, float* input_left, float* input_right);
+static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereo_equalizer, float sample_rate);
+static void px_equalizer_stereo_add_band(px_stereo_equalizer* stereo_equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type);
+
+
+// ----------------------------------------------------------------------------------------------------
+
 static void px_equalizer_mono_process(px_mono_equalizer* equalizer, float* input)
 {
      assert(equalizer);
