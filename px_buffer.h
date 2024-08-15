@@ -24,7 +24,17 @@ typedef struct
 #endif
 
 
-tatic void px_buffer_init(px_buffer* buffer, int num_samples, int num_channels)
+// --------------------------------------------------------------------------------------------------------
+
+static void px_buffer_init(px_buffer* buffer, int num_samples, int num_channels);
+static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value);
+static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int sample_position);
+static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain);
+
+// --------------------------------------------------------------------------------------------------------
+
+
+static void px_buffer_init(px_buffer* buffer, int num_samples, int num_channels)
 {
     if (!buffer)
         return;
