@@ -1,4 +1,7 @@
-#include <tgmath.h>
+#include <math.h>
+
+#ifndef PX_GLOBALS_H
+#define PX_GLOBALS_H
 
 // Math Constants
 // ---------------------------------
@@ -21,4 +24,4 @@ static inline float dB2lin(float dB) {
 }
 // -------------------------------------
 
-
+#endif 

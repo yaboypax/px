@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include "px_globals.h"
 
+#ifndef PX_BIQUAD_H
+#define PX_BIQUAD_H
+
+
 typedef enum {
    BIQUAD_NONE,
    BIQUAD_LOWPASS,
@@ -169,10 +173,12 @@ static void px_biquad_stereo_set_frequency(px_stereo_biquad* stereo_biquad, floa
 static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float in_quality)
 {
     assert(biquad);
-    biquad->parameters.quality = in_quality;
-    px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
+    if (in_quality > 0.0f)
+    {
+        biquad->parameters.quality = in_quality;
+        px_biquad_update_coefficients(biquad->parameters, &biquad->coefficients);
+    }
 }
-
 static void px_biquad_stereo_set_quality(px_stereo_biquad* stereo_biquad, float in_quality)
 {
     assert(stereo_biquad);
@@ -413,5 +419,5 @@ static inline void px_biquad_update_coefficients(const px_biquad_parameters para
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+#endif
 

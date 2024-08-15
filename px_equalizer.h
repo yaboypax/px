@@ -51,7 +51,7 @@ static void px_equalizer_mono_process(px_mono_equalizer* equalizer, float* input
      assert(equalizer);
      for (int i = 0; i < equalizer->num_bands; ++i)
      {
-     	px_biquad_mono_process(px_vector_get(&equalizer->filter_bank, i), input);
+     	px_biquad_mono_process((px_mono_biquad*)px_vector_get(&equalizer->filter_bank, i), input);
      }
 }
 
@@ -60,7 +60,7 @@ static void px_equalizer_stereo_process(px_stereo_equalizer* stereo_equalizer, f
      assert(stereo_equalizer);
      for (int i = 0; i < stereo_equalizer->num_bands; ++i)
      {
-     	px_biquad_stereo_process(px_vector_get(&stereo_equalizer->filter_bank, i), input_left, input_right);
+     	px_biquad_stereo_process((px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, i), input_left, input_right);
      }     
 }
 
@@ -69,6 +69,8 @@ static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sam
 	assert(equalizer);
 	equalizer->sample_rate = sample_rate;
 	equalizer->num_bands = 0;
+
+    px_vector_initialize(&equalizer->filter_bank);
 }
 
 static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereo_equalizer, float sample_rate)
@@ -76,6 +78,8 @@ static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereo_equalizer
     assert(stereo_equalizer);
     stereo_equalizer->sample_rate = sample_rate;
     stereo_equalizer->num_bands = 0;
+
+    px_vector_initialize(&stereo_equalizer->filter_bank);
 }
 
 static void px_equalizer_mono_add_band(px_mono_equalizer* equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type)
@@ -108,7 +112,7 @@ static void px_equalizer_mono_remove_band(px_mono_equalizer* equalizer, size_t i
 {
     if (index < equalizer->num_bands)
     {
-	px_biquad_mono_destroy(px_vector_get(&equalizer->filter_bank, index));    
+	px_biquad_mono_destroy((px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index));    
 	px_vector_remove(&equalizer->filter_bank, index);
 	equalizer->num_bands--;
     }
@@ -118,7 +122,7 @@ static void px_equalizer_stereo_remove_band(px_stereo_equalizer* stereo_equalize
 {
     if (index < stereo_equalizer->num_bands)
     {
-	px_biquad_stereo_destroy(px_vector_get(&stereo_equalizer->filter_bank, index)); 
+	px_biquad_stereo_destroy((px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index));
 	px_vector_remove(&stereo_equalizer->filter_bank, index);
 	stereo_equalizer->num_bands--;
     }
@@ -130,7 +134,7 @@ static void px_equalizer_mono_set_frequency(px_mono_equalizer* equalizer, size_t
     assert(equalizer);
     if (index < equalizer->num_bands)
     {
-	px_mono_biquad* filter = px_vector_get(&equalizer->filter_bank, index);    
+	px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
 	px_biquad_mono_set_frequency(filter, in_frequency);
     }
 }
@@ -140,7 +144,7 @@ static void px_equalizer_stereo_set_frequency(px_stereo_equalizer* stereo_equali
     assert(stereo_equalizer);
     if (index < stereo_equalizer->num_bands)
     {
-	px_stereo_biquad* filter = px_vector_get(&stereo_equalizer->filter_bank, index);    
+	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
 	px_biquad_stereo_set_frequency(filter, in_frequency);
     }
 }
@@ -150,7 +154,7 @@ static void px_equalizer_mono_set_quality(px_mono_equalizer* equalizer, size_t i
     assert(equalizer);
     if (index < equalizer->num_bands)
     {
-	px_mono_biquad* filter = px_vector_get(&equalizer->filter_bank, index);    
+	px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
 	px_biquad_mono_set_quality(filter, in_quality);
     }
 }
@@ -160,7 +164,7 @@ static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalize
     assert(stereo_equalizer);
     if (index < stereo_equalizer->num_bands)
     {
-	px_stereo_biquad* filter = px_vector_get(&stereo_equalizer->filter_bank, index);    
+	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
 	px_biquad_stereo_set_quality(filter, in_quality);
     }
 }
@@ -170,7 +174,7 @@ static void px_equalizer_mono_set_gain(px_mono_equalizer* equalizer, size_t inde
     assert(equalizer);
     if (index < equalizer->num_bands)
     {
-	px_mono_biquad* filter = px_vector_get(&equalizer->filter_bank, index);    
+	px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
 	px_biquad_mono_set_gain(filter, in_gain);
     }
 }
@@ -180,7 +184,7 @@ static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, 
     assert(stereo_equalizer);
     if (index < stereo_equalizer->num_bands)
     {
-	px_stereo_biquad* filter = px_vector_get(&stereo_equalizer->filter_bank, index);    
+	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
 	px_biquad_stereo_set_gain(filter, in_gain);
     }
 }
@@ -190,7 +194,7 @@ static void px_equalizer_mono_set_type(px_mono_equalizer* equalizer, size_t inde
     assert(equalizer);
     if (index < equalizer->num_bands)
     {
-	px_mono_biquad* filter = px_vector_get(&equalizer->filter_bank, index);    
+	px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
 	px_biquad_mono_set_type(filter, in_type);
     }
 }
@@ -200,7 +204,7 @@ static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, 
     assert(stereo_equalizer);
     if (index < stereo_equalizer->num_bands)
     {
-	px_stereo_biquad* filter = px_vector_get(&stereo_equalizer->filter_bank, index);    
+	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
 	px_biquad_stereo_set_type(filter, in_type);
     }
 
