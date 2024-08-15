@@ -26,37 +26,51 @@ typedef struct
 
 // --------------------------------------------------------------------------------------------------------
 
-static void px_buffer_init(px_buffer* buffer, int num_samples, int num_channels);
+
+static px_buffer* px_buffer_create(int num_samples, int num_channels);
+static void px_buffer_destroy(px_buffer* buffer);
+static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_channels);
+
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value);
 static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int sample_position);
 static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain);
 
 // --------------------------------------------------------------------------------------------------------
 
-
-static void px_buffer_init(px_buffer* buffer, int num_samples, int num_channels)
+static px_buffer* px_buffer_create(int num_samples, int num_channels)
 {
-    if (!buffer)
-        return;
+    px_buffer* buffer = (px_buffer*)malloc(sizeof(px_buffer));
+    px_buffer_initialize(buffer, num_samples, num_channels);
+    return buffer;
+}
+
+static void px_buffer_destroy(px_buffer* buffer)
+{
+    if (buffer)
+    	free(buffer);
+}
+
+static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_channels)
+{
+    assert(buffer);
     
     buffer->num_samples = num_samples;
     buffer->num_channels = num_channels;
 
     for (int channel = 0; channel < num_channels; ++channel)
     {
-        buffer->vector[channel].capacity = 0;
-        buffer->vector[channel].size = 0;
-        buffer->vector[channel].data = NULL;
+        px_vector_initialize(&buffer->vector[channel]);
 
         for (int i = 0; i < num_samples; ++i)
         {
-            BUFFER_TYPE value = 1.f;
-	    BUFFER_TYPE* ptr = &value;
+         
+	    BUFFER_TYPE* ptr = (BUFFER_TYPE*)malloc(sizeof(BUFFER_TYPE));
+            *ptr = 0.f;
 	    px_vector_push(&buffer->vector[channel], ptr);
         }
     }
 
-    buffer->is_filled = false;
+    //buffer->is_filled = false;
 }
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value)
