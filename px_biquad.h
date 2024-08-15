@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <assert.h>
-
+#include <stdlib.h>
 #include "px_globals.h"
 
 typedef enum {
@@ -67,6 +67,9 @@ static inline void px_biquad_update_coefficients(const px_biquad_parameters para
 static void px_biquad_mono_process(px_mono_biquad* biquad, float* input);
 static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
 
+static px_mono_biquad* px_biquad_mono_create(float sample_rate, BIQUAD_FILTER_TYPE type); 
+static void px_biquad_mono_destroy(px_mono_biquad* biquad);
+
 static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float in_frequency);
 static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float in_quality);
 static void px_biquad_mono_set_gain(px_mono_biquad* biquad, float in_gain);
@@ -76,6 +79,9 @@ static void px_biquad_mono_set_type(px_mono_biquad* biquad, BIQUAD_FILTER_TYPE i
 
 static void px_biquad_stereo_process(px_stereo_biquad* stereo_biquad, float* in_left, float* in_right);
 static void px_biquad_stereo_initialize(px_stereo_biquad* stereo_biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
+
+static px_stereo_biquad* px_biquad_stereo_create(float sample_rate, BIQUAD_FILTER_TYPE type);
+static void px_biquad_stereo_destroy(px_stereo_biquad* stereo_biquad);
 
 static void px_biquad_stereo_set_frequency(px_stereo_biquad* biquad, float in_frequency);
 static void px_biquad_stereo_set_quality(px_stereo_biquad* biquad, float in_quality);
@@ -118,6 +124,33 @@ static void px_biquad_stereo_initialize(px_stereo_biquad* stereo_biquad, float s
     px_biquad_mono_initialize(&stereo_biquad->left, sample_rate, type);
     px_biquad_mono_initialize(&stereo_biquad->right, sample_rate, type);
 }
+
+static px_mono_biquad* px_biquad_mono_create(float sample_rate, BIQUAD_FILTER_TYPE type)
+{
+    px_mono_biquad* biquad = (px_mono_biquad*)malloc(sizeof(px_mono_biquad));
+    px_biquad_mono_initialize(biquad, sample_rate, type);
+    return biquad;
+}
+
+static px_stereo_biquad* px_biquad_stereo_create(float sample_rate, BIQUAD_FILTER_TYPE type)
+{
+    px_stereo_biquad* stereo_biquad = (px_stereo_biquad*)malloc(sizeof(px_stereo_biquad));
+    px_biquad_stereo_initialize(stereo_biquad, sample_rate, type);
+    return stereo_biquad;
+}
+
+static void px_biquad_mono_destroy(px_mono_biquad* biquad)
+{
+    if (biquad)
+	free(biquad);
+}
+
+static void px_biquad_stereo_destroy(px_stereo_biquad* stereo_biquad)
+{
+    if (stereo_biquad)
+	free(stereo_biquad);
+}
+
 
 static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float in_frequency)
 {
@@ -174,6 +207,7 @@ static void px_biquad_stereo_set_type(px_stereo_biquad* stereo_biquad, BIQUAD_FI
     px_biquad_mono_set_type(&stereo_biquad->left, in_type);
     px_biquad_mono_set_type(&stereo_biquad->right, in_type);
 }
+
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 static inline float px_biquad_filter(px_mono_biquad* biquad, float input)
