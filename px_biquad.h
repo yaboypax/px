@@ -1,13 +1,9 @@
-#include "stdio.h"
-#include <math.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <stdlib.h>
-#include "px_globals.h"
-
 #ifndef PX_BIQUAD_H
 #define PX_BIQUAD_H
 
+// PX_BIQUAD filter
+//
+//
 
 typedef enum {
    BIQUAD_NONE,
@@ -23,45 +19,8 @@ typedef enum {
    BIQUAD_ALLPASS
 } BIQUAD_FILTER_TYPE;
 
-typedef struct 
-{
-   float a0;
-   float a1;
-   float a2;
-   float b1;
-   float b2;
-   float z1;
-   float z2;
-} px_biquad_coefficients;
-
-typedef struct
-{
-   float sample_rate;
-   float frequency;
-   float quality;
-   float gain;
-   BIQUAD_FILTER_TYPE type;
-} px_biquad_parameters;
-
-typedef struct 
-{
-   px_biquad_coefficients coefficients;
-   px_biquad_parameters parameters;
-} px_mono_biquad;
-
-typedef struct
-{
-   px_mono_biquad left;
-   px_mono_biquad right;
-} px_stereo_biquad;
-
-// ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//
-// inline functions
-
-static inline float px_biquad_filter(px_mono_biquad* biquad, float input);
-static inline void px_biquad_update_coefficients(const px_biquad_parameters parameters, px_biquad_coefficients* coefficients);
-
+typedef struct px_mono_biquad px_mono_biquad;
+typedef struct px_stereo_biquad px_stereo_biquad;
 
 // api functions
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -93,6 +52,57 @@ static void px_biquad_stereo_set_gain(px_stereo_biquad* biquad, float in_gain);
 static void px_biquad_stereo_set_type(px_stereo_biquad* biquad, BIQUAD_FILTER_TYPE in_type);
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//private
+
+typedef struct 
+{
+   float a0;
+   float a1;
+   float a2;
+   float b1;
+   float b2;
+   float z1;
+   float z2;
+} px_biquad_coefficients;
+
+typedef struct
+{
+   float sample_rate;
+   float frequency;
+   float quality;
+   float gain;
+   BIQUAD_FILTER_TYPE type;
+} px_biquad_parameters;
+
+struct px_mono_biquad
+{
+   px_biquad_coefficients coefficients;
+   px_biquad_parameters parameters;
+};
+
+struct px_stereo_biquad
+{
+   px_mono_biquad left;
+   px_mono_biquad right;
+}; 
+
+
+// inline functions
+// ----------------------------------------------------------------------------------
+
+static inline float px_biquad_filter(px_mono_biquad* biquad, float input);
+static inline void px_biquad_update_coefficients(const px_biquad_parameters parameters, px_biquad_coefficients* coefficients);
+
+// ---------------------------------------------------------------------------------------
+
+#include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <stdlib.h>
+#include "px_globals.h"
+
 
 static void px_biquad_mono_process(px_mono_biquad* biquad, float* input)
 {
@@ -214,7 +224,7 @@ static void px_biquad_stereo_set_type(px_stereo_biquad* stereo_biquad, BIQUAD_FI
     px_biquad_mono_set_type(&stereo_biquad->right, in_type);
 }
 
-// ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------------------
 
 static inline float px_biquad_filter(px_mono_biquad* biquad, float input)
 {
