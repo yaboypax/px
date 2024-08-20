@@ -19,8 +19,8 @@ static void px_saturator_destroy(px_saturator* saturator);
 
 static void px_saturator_set_drive(px_saturator* saturator, float drive);
 static void px_saturator_set_curve(px_saturator* saturator, SATURATION_CURVE curve);
-static void px_mono_saturator_process(px_saturator* saturator, float* input);
-static void px_stereo_saturator_process(px_saturator* saturator, float* input_left, float* input_right);
+static void px_saturator_mono_process(px_saturator* saturator, float* input);
+static void px_saturator_stereo_process(px_saturator* saturator, float* input_left, float* input_right);
 
 static inline float px_saturate_sinusoidal(float input, float drive);
 static inline float px_saturate_tangent(float input, float drive);
@@ -102,6 +102,13 @@ static inline float px_saturate_sinusoidal(float input, float drive)
 
 static inline float px_saturate_tangent(float input, float drive)
 {
-    float output = tanh(input * drive);
-    return output;
+    if (drive == 0.f)
+    {
+	return input
+    }
+    else
+    {
+    	float output = tanh(input * drive);
+    	return output;
+    }
 }
