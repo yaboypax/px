@@ -1,4 +1,6 @@
 #include <math.h>
+#include <assert.h>
+#include "px_memory.h"
 
 typedef enum
 {
@@ -35,7 +37,7 @@ static void px_saturator_initialize(px_saturator* saturator, SATURATION_CURVE cu
 
 static px_saturator* px_saturator_create(SATURATION_CURVE curve)
 {
-    px_saturator* saturator = (px_saturator*)malloc(sizeof(px_saturator));
+    px_saturator* saturator = (px_saturator*)px_malloc(sizeof(px_saturator));
     if (saturator)
     {
         px_saturator_initialize(saturator, curve);
@@ -47,7 +49,7 @@ static px_saturator* px_saturator_create(SATURATION_CURVE curve)
 static void px_saturator_destroy(px_saturator* saturator)
 {
     if (saturator)
-	free(saturator);
+	px_free(saturator);
 }
 
 static void px_saturator_set_drive(px_saturator* saturator, float drive)
@@ -104,7 +106,7 @@ static inline float px_saturate_tangent(float input, float drive)
 {
     if (drive == 0.f)
     {
-	return input
+	return input;
     }
     else
     {
