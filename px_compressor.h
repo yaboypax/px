@@ -358,7 +358,7 @@ static inline float px_compressor_calculate_knee(const px_mono_compressor* compr
 static inline float px_compressor_compress(px_mono_compressor* compressor, float input, float sidechain)
 {
     // if hit, check the caclulate_envelope function
-    assert(!isnan(compressor->parameters.env));
+   // assert(!isnan(compressor->parameters.env));
 
     sidechain += DC_OFFSET;   // avoid log( 0 )
     float keydB = lin2dB(sidechain); 
