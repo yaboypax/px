@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "px_vector.h"
+#include "px_memory.h"
 
 /*
 
@@ -116,7 +117,7 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain);
 
 static px_buffer* px_buffer_create(int num_samples, int num_channels)
 {
-    px_buffer* buffer = (px_buffer*)malloc(sizeof(px_buffer));
+    px_buffer* buffer = (px_buffer*)px_malloc(sizeof(px_buffer));
     px_buffer_initialize(buffer, num_samples, num_channels);
     return buffer;
 }
@@ -124,7 +125,17 @@ static px_buffer* px_buffer_create(int num_samples, int num_channels)
 static void px_buffer_destroy(px_buffer* buffer)
 {
     if (buffer)
-    	free(buffer);
+    {
+        for (int channel = 0; channel < buffer->num_channels; ++channel)
+        {
+            if (buffer->vector[channel].data)
+            {
+                px_free(buffer->vector[channel].data);
+                buffer->vector[channel].data = NULL;
+            }
+        }
+        px_free(buffer);
+    }
 }
 
 static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_channels)
@@ -137,17 +148,8 @@ static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_cha
     for (int channel = 0; channel < num_channels; ++channel)
     {
         px_vector_initialize(&buffer->vector[channel]);
-
-        for (int i = 0; i < num_samples; ++i)
-        {
-         
-	    BUFFER_TYPE* ptr = (BUFFER_TYPE*)malloc(sizeof(BUFFER_TYPE));
-            *ptr = 0.f;
-	    px_vector_push(&buffer->vector[channel], ptr);
-        }
+	buffer->vector[channel].data = (void**)px_malloc(num_samples * sizeof(BUFFER_TYPE*));
     }
-
-    //buffer->is_filled = false;
 }
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value)

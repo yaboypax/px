@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 
-
+#include "px_memory.h"
 /* -------------------------------------------------------------------------
 
 
@@ -37,7 +37,7 @@ static void px_vector_resize(px_vector* vector, const size_t new_size);
 
 static px_vector* px_vector_create()
 {
-    px_vector* vector = (px_vector*)malloc(sizeof(px_vector));
+    px_vector* vector = (px_vector*)px_malloc(sizeof(px_vector));
     px_vector_initialize(vector);
     return vector;
 }
@@ -55,8 +55,8 @@ static void px_vector_destroy(px_vector* vector)
 {
     if (vector)
     {
-        free(vector->data);
-        free(vector);
+        px_free(vector->data);
+        px_free(vector);
     }
 }
 
@@ -133,7 +133,7 @@ static void px_vector_copy(px_vector* dest_vector, px_vector* source_vector)
     dest_vector->size = source_vector->size;
     dest_vector->capacity = source_vector->capacity;
 
-    void** new_data = (void**)malloc(sizeof(void*) * dest_vector->capacity);
+    void** new_data = (void**)px_malloc(sizeof(void*) * dest_vector->capacity);
     if (new_data) 
     {
         memcpy(new_data, source_vector->data, sizeof(void*) * source_vector->size);
@@ -193,7 +193,7 @@ static void px_fvector_resize(px_fvector* vector, const size_t newSize);
 
 static px_fvector* px_fvector_create()
 {
-    px_fvector* vector = (px_fvector*)malloc(sizeof(px_fvector));
+    px_fvector* vector = (px_fvector*)px_malloc(sizeof(px_fvector));
     assert(vector);
 
     vector->data = NULL;
@@ -207,8 +207,8 @@ static void px_fvector_destroy(px_fvector* vector)
 {
     if (vector)
     {
-        free(vector->data);
-        free(vector);
+        px_free(vector->data);
+        px_free(vector);
     }
     
 }
@@ -254,7 +254,7 @@ static void px_fvector_copy(px_fvector* destVector, px_fvector* sourceVector)
     destVector->size = sourceVector->size;
     destVector->capacity = sourceVector->capacity;
 
-    float* newData = (float*)malloc(sizeof(float)*destVector->capacity);
+    float* newData = (float*)px_malloc(sizeof(float)*destVector->capacity);
     if (newData)
     {
         memcpy(newData, sourceVector->data, sizeof(float) * sourceVector->size);
