@@ -15,6 +15,8 @@ typedef struct
 } px_envelope_detector;
 
 
+#define INITIALIZED_PARAMETERS { 0.f, 1.f, 0.f, 0.f, 0.f, 10.f, 100.f }
+
 // public interface
 // use functions to set and compressors.parameters.(value) to get 
 
@@ -140,7 +142,7 @@ static void px_compressor_mono_initialize(px_mono_compressor* compressor, float 
     px_biquad_mono_initialize(&filter, in_sample_rate, BIQUAD_HIGHPASS);
     px_biquad_mono_set_frequency(&filter, 0.f);
 
-    px_compressor_parameters new_parameters = { 0.f, 1.f, 0.f, 0.f};
+    px_compressor_parameters new_parameters = INITIALIZED_PARAMETERS;
     compressor->parameters = new_parameters;
 
     compressor->attack.sample_rate = in_sample_rate;
@@ -161,6 +163,10 @@ static void px_compressor_stereo_initialize(px_stereo_compressor* stereo_compres
     px_biquad_stereo_initialize(&filter, in_sample_rate, BIQUAD_HIGHPASS);
     px_biquad_stereo_set_frequency(&filter, 0.f);
     stereo_compressor->sidechain_filter = filter;
+
+    px_compressor_parameters new_parameters = INITIALIZED_PARAMETERS; 
+    stereo_compressor->parameters = new_parameters;
+
 
     px_compressor_mono_initialize(&stereo_compressor->left, in_sample_rate);
     px_compressor_mono_initialize(&stereo_compressor->right, in_sample_rate);
