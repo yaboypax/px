@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "px_biquad.h"
-
+#include "px_memory.h"
 
 
 typedef struct
@@ -54,6 +54,9 @@ typedef struct
 // API functions
 // ----------------------------------------------------------------------------------------------------------------------
 // mono
+static px_mono_compressor* px_compressor_mono_create(float in_sample_rate);
+static void px_compressor_mono_destroy(px_mono_compressor* compressor);
+
 static void px_compressor_mono_process(px_mono_compressor* compressor, float* input);
 static void px_compressor_mono_initialize(px_mono_compressor* compressor, float in_sample_rate);
 
@@ -71,6 +74,10 @@ static void px_compressor_mono_set_sidechain_gain(px_mono_compressor* compressor
 static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor, BIQUAD_FILTER_TYPE in_type);
 
 // stereo
+
+static px_stereo_compressor* px_compressor_stereo_create(float in_sample_rate);
+static void px_compressor_stereo_destroy(px_stereo_compressor* stereo_compressor);
+
 static void px_compressor_stereo_process(px_stereo_compressor* stereo_compressor, float* input_left, float* input_right);
 static void px_compressor_stereo_initialize(px_stereo_compressor* stereo_compressor, float in_sample_rate);
 
@@ -100,6 +107,43 @@ static inline float px_compressor_calculate_knee(const px_mono_compressor* compr
 static inline float px_compressor_compress(px_mono_compressor* compressor, float input, float sidechain);
 	
 // --------------------------------------------------------------------------------------------------------
+
+static px_mono_compressor* px_compressor_mono_create(float in_sample_rate)
+{
+    if (in_sample_rate < 40000.f) //test for validity probably a better way
+	return NULL;
+
+    px_mono_compressor* compressor = (px_mono_compressor*)px_malloc(sizeof(px_mono_compressor));
+    if (compressor)
+	px_compressor_mono_initialize(compressor, in_sample_rate);
+	return compressor;
+
+}
+
+
+static px_stereo_compressor* px_compressor_stereo_create(float in_sample_rate)
+{
+    if (in_sample_rate < 40000.f) //test for validity probably a better way
+	return NULL;
+
+    px_stereo_compressor* stereo_compressor = (px_stereo_compressor*)px_malloc(sizeof(px_stereo_compressor));
+    if (stereo_compressor)
+	px_compressor_stereo_initialize(stereo_compressor, in_sample_rate);
+	return stereo_compressor;
+
+}
+
+static void px_compressor_mono_destroy(px_mono_compressor* compressor)
+{
+    if (compressor)
+	px_free(compressor);
+}
+
+static void px_compressor_stereo_destroy(px_stereo_compressor* stereo_compressor)
+{
+    if (stereo_compressor)
+	px_free(stereo_compressor);
+}
 
 static void px_compressor_mono_process(px_mono_compressor* compressor, float* input)
 {
