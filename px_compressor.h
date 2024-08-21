@@ -34,7 +34,8 @@ typedef struct
 {
     px_mono_compressor left;
     px_mono_compressor right;
-    
+   
+    px_compressor_parameters parameters; 
     px_stereo_biquad sidechain_filter;
 } px_stereo_compressor;
 
@@ -150,7 +151,7 @@ static void px_compressor_stereo_initialize(px_stereo_compressor* stereo_compres
     px_biquad_stereo_initialize(&filter, in_sample_rate, BIQUAD_HIGHPASS);
     px_biquad_stereo_set_frequency(&filter, 0.f);
     stereo_compressor->sidechain_filter = filter;
-    
+
     px_compressor_mono_initialize(&stereo_compressor->left, in_sample_rate);
     px_compressor_mono_initialize(&stereo_compressor->right, in_sample_rate);
 
@@ -165,6 +166,7 @@ static void px_compressor_mono_set_parameters(px_mono_compressor* compressor, px
 static void px_compressor_stereo_set_parameters(px_stereo_compressor* stereo_compressor, px_compressor_parameters in_parameters)
 {
     assert(stereo_compressor);
+    stereo_compressor->parameters = in_parameters;
     px_compressor_mono_set_parameters(&stereo_compressor->left, in_parameters);
     px_compressor_mono_set_parameters(&stereo_compressor->right, in_parameters);
 }
@@ -179,6 +181,7 @@ static void px_compressor_mono_set_threshold(px_mono_compressor* compressor, flo
 static void px_compressor_stereo_set_threshold(px_stereo_compressor* stereo_compressor, float in_threshold)
 {
     assert(stereo_compressor);
+    stereo_compressor->parameters.threshold = in_threshold;
     px_compressor_mono_set_threshold(&stereo_compressor->left, in_threshold);
     px_compressor_mono_set_threshold(&stereo_compressor->right, in_threshold);
 }
@@ -192,6 +195,7 @@ static void px_compressor_mono_set_ratio(px_mono_compressor* compressor, float i
 static void px_compressor_stereo_set_ratio(px_stereo_compressor* stereo_compressor, float in_ratio)
 {
     assert(stereo_compressor);
+    stereo_compressor->parameters.ratio = in_ratio;
     px_compressor_mono_set_ratio(&stereo_compressor->left, in_ratio);
     px_compressor_mono_set_ratio(&stereo_compressor->right, in_ratio);
 }
@@ -205,6 +209,7 @@ static void px_compressor_mono_set_knee(px_mono_compressor* compressor, float in
 static void px_compressor_stereo_set_knee(px_stereo_compressor* stereo_compressor, float in_knee_width)
 {
     assert(stereo_compressor);
+    stereo_compressor->parameters.knee_width = in_knee_width;
     px_compressor_mono_set_knee(&stereo_compressor->left, in_knee_width);
     px_compressor_mono_set_knee(&stereo_compressor->right, in_knee_width);
 }
