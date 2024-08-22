@@ -1,10 +1,12 @@
 #include <math.h>
 #include <assert.h>
+
+#include "px_globals.h"
 #include "px_memory.h"
 
 typedef enum
 {
-    SINUSOIDAL,
+    ARCTANGENT,
     TANGENT
 } SATURATION_CURVE;
 
@@ -24,7 +26,7 @@ static void px_saturator_set_curve(px_saturator* saturator, SATURATION_CURVE cur
 static void px_saturator_mono_process(px_saturator* saturator, float* input);
 static void px_saturator_stereo_process(px_saturator* saturator, float* input_left, float* input_right);
 
-static inline float px_saturate_sinusoidal(float input, float drive);
+static inline float px_saturate_arctangent(float input, float drive);
 static inline float px_saturate_tangent(float input, float drive);
 
 
@@ -69,8 +71,8 @@ static void px_saturator_mono_process(px_saturator* saturator, float* input)
     assert(saturator);
     switch (saturator->curve)
     {	
-	case SINUSOIDAL:
-		*input = px_saturate_sinusoidal(*input, saturator->drive);
+	case ARCTANGENT:
+		*input = px_saturate_arctangent(*input, saturator->drive);
 		break;
 
 	case TANGENT:
@@ -84,9 +86,9 @@ static void px_saturator_stereo_process(px_saturator* saturator, float* input_le
     assert(saturator);
     switch (saturator->curve)
     {	
-	case SINUSOIDAL:
-		*input_left = px_saturate_sinusoidal(*input_left, saturator->drive);
-		*input_right = px_saturate_sinusoidal(*input_right, saturator->drive);
+	case ARCTANGENT:
+		*input_left = px_saturate_arctangent(*input_left, saturator->drive);
+		*input_right = px_saturate_arctangent(*input_right, saturator->drive);
 		break;
 
 	case TANGENT:
@@ -96,21 +98,12 @@ static void px_saturator_stereo_process(px_saturator* saturator, float* input_le
     }
 }
 
-static inline float px_saturate_sinusoidal(float input, float drive)
+static inline float px_saturate_arctangent(float input, float drive)
 {
-    float output = sin(input);
-    return output;
+    return atan(input * dB2lin(drive));
 }
 
 static inline float px_saturate_tangent(float input, float drive)
 {
-    if (drive == 0.f)
-    {
-	return input;
-    }
-    else
-    {
-    	float output = tanh(input * drive);
-    	return output;
-    }
+    return tanh(input * dB2lin(drive));
 }
