@@ -17,6 +17,9 @@ typedef struct
 } px_saturator;
 
 
+// ----------------------------------------------------------------------------------------------------
+
+
 static void px_saturator_initialize(px_saturator* saturator, SATURATION_CURVE curve);
 static px_saturator* px_saturator_create(SATURATION_CURVE curve);
 static void px_saturator_destroy(px_saturator* saturator);
@@ -28,6 +31,9 @@ static void px_saturator_stereo_process(px_saturator* saturator, float* input_le
 
 static inline float px_saturate_arctangent(float input, float drive);
 static inline float px_saturate_tangent(float input, float drive);
+
+
+// ----------------------------------------------------------------------------------------------------
 
 
 static void px_saturator_initialize(px_saturator* saturator, SATURATION_CURVE curve)
