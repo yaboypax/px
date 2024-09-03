@@ -6,14 +6,14 @@
 
 typedef struct 
 {
-    px_vector filter_bank;
+    px_vector filter_bank;  // type-generic vector filled with px_mono_biquad filters
     float sample_rate;
     int num_bands;
 } px_mono_equalizer;
 
 typedef struct 
 {
-   px_vector filter_bank;
+   px_vector filter_bank;   // type-generic vector filled with px_stereo_biquad filters
    float sample_rate;
    int num_bands;
 } px_stereo_equalizer;
