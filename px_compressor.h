@@ -63,6 +63,11 @@ typedef struct
 // API functions
 // ----------------------------------------------------------------------------------------------------------------------
 
+#define px_compressor_process(a,...) _Generic((a),			\
+	px_mono_compressor*: px_compressor_mono_process,		\
+	px_stereo_compressor*: px_compressor_stereo_process),		\
+		(a, __VA_ARGS__)
+
 #define px_compressor_initialize(a,b) _Generic((a),			\
 	px_mono_compressor*: px_compressor_mono_initialize,		\
 	px_stereo_compressor*: px_compressor_stereo_initialize),	\
