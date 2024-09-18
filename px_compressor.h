@@ -63,6 +63,15 @@ typedef struct
 // API functions
 // ----------------------------------------------------------------------------------------------------------------------
 
+// explicitly choose mono or stereo to create and destroy
+
+static px_mono_compressor* px_compressor_mono_create(float in_sample_rate);
+static void px_compressor_mono_destroy(px_mono_compressor* compressor);
+
+static px_stereo_compressor* px_compressor_stereo_create(float in_sample_rate);
+static void px_compressor_stereo_destroy(px_stereo_compressor* stereo_compressor);
+
+
 #define px_compressor_process(a,...) _Generic((a),			\
 	px_mono_compressor*: px_compressor_mono_process,		\
 	px_stereo_compressor*: px_compressor_stereo_process),		\
@@ -114,9 +123,6 @@ typedef struct
 // ----------------------------------------------------------------------------------------------------------------------
 // mono
 
-static px_mono_compressor* px_compressor_mono_create(float in_sample_rate);
-static void px_compressor_mono_destroy(px_mono_compressor* compressor);
-
 static void px_compressor_mono_process(px_mono_compressor* compressor, float* input);
 static void px_compressor_mono_initialize(px_mono_compressor* compressor, float in_sample_rate);
 
@@ -134,9 +140,6 @@ static void px_compressor_mono_set_sidechain_gain(px_mono_compressor* compressor
 static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor, BIQUAD_FILTER_TYPE in_type);
 
 // stereo
-
-static px_stereo_compressor* px_compressor_stereo_create(float in_sample_rate);
-static void px_compressor_stereo_destroy(px_stereo_compressor* stereo_compressor);
 
 static void px_compressor_stereo_process(px_stereo_compressor* stereo_compressor, float* input_left, float* input_right);
 static void px_compressor_stereo_initialize(px_stereo_compressor* stereo_compressor, float in_sample_rate);

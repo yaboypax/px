@@ -25,13 +25,52 @@ typedef struct px_stereo_biquad px_stereo_biquad;
 // api functions
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+static px_mono_biquad* px_biquad_mono_create(float sample_rate, BIQUAD_FILTER_TYPE type); 
+static void px_biquad_mono_destroy(px_mono_biquad* biquad);
+
+
+static px_stereo_biquad* px_biquad_stereo_create(float sample_rate, BIQUAD_FILTER_TYPE type);
+static void px_biquad_stereo_destroy(px_stereo_biquad* stereo_biquad);
+
+
+#define px_biquad_process(a,...) _Generic((a),			\
+	px_mono_biquad*: px_biquad_mono_process,		\
+	px_stereo_biquad*: px_biquad_stereo_process),		\
+		(a,__VA_ARGS__)
+
+#define px_biquad_initialize(a,b,c) _Generic((a),		\
+	px_mono_biquad*: px_biquad_mono_initialize,		\
+	px_stereo_biquad*: px_biquad_stereo_initialize),	\
+		(a,b,c)
+
+#define px_biquad_set_frequency(a,b) _Generic((a),		\
+	px_mono_biquad*: px_biquad_mono_set_frequency,		\
+	px_stereo_biqad*: px_biquad_stereo_set_frequency),	\
+		(a,b)
+
+#define px_biquad_set_quality(a,b) _Generic((a),		\
+	px_mono_biquad*: px_biquad_mono_set_quality,		\
+	px_stereo_biqad*: px_biquad_stereo_set_quality),	\
+		(a,b)
+
+#define px_biquad_set_gain(a,b) _Generic((a),			\
+	px_mono_biquad*: px_biquad_mono_set_gain,		\
+	px_stereo_biqad*: px_biquad_stereo_set_gain),		\
+		(a,b)
+
+#define px_biquad_set_type(a,b) _Generic((a),			\
+	px_mono_biquad*: px_biquad_mono_set_type,		\
+	px_stereo_biqad*: px_biquad_stereo_set_type),		\
+		(a,b)
+
+
+
+// --------------------------------------------------------------------------------------------------------------------------------------------
 // mono
 
 static void px_biquad_mono_process(px_mono_biquad* biquad, float* input);
 static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
-
-static px_mono_biquad* px_biquad_mono_create(float sample_rate, BIQUAD_FILTER_TYPE type); 
-static void px_biquad_mono_destroy(px_mono_biquad* biquad);
 
 static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float in_frequency);
 static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float in_quality);
@@ -42,9 +81,6 @@ static void px_biquad_mono_set_type(px_mono_biquad* biquad, BIQUAD_FILTER_TYPE i
 
 static void px_biquad_stereo_process(px_stereo_biquad* stereo_biquad, float* in_left, float* in_right);
 static void px_biquad_stereo_initialize(px_stereo_biquad* stereo_biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
-
-static px_stereo_biquad* px_biquad_stereo_create(float sample_rate, BIQUAD_FILTER_TYPE type);
-static void px_biquad_stereo_destroy(px_stereo_biquad* stereo_biquad);
 
 static void px_biquad_stereo_set_frequency(px_stereo_biquad* biquad, float in_frequency);
 static void px_biquad_stereo_set_quality(px_stereo_biquad* biquad, float in_quality);
