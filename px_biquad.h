@@ -21,6 +21,7 @@ typedef enum {
 
 typedef struct px_mono_biquad px_mono_biquad;
 typedef struct px_stereo_biquad px_stereo_biquad;
+typedef struct px_ms_biquad px_ms_biquad;
 
 // api functions
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -29,39 +30,46 @@ typedef struct px_stereo_biquad px_stereo_biquad;
 static px_mono_biquad* px_biquad_mono_create(float sample_rate, BIQUAD_FILTER_TYPE type); 
 static void px_biquad_mono_destroy(px_mono_biquad* biquad);
 
-
 static px_stereo_biquad* px_biquad_stereo_create(float sample_rate, BIQUAD_FILTER_TYPE type);
 static void px_biquad_stereo_destroy(px_stereo_biquad* stereo_biquad);
 
+static px_ms_biquad* px_biquad_ms_create(float sample_rate, BIQUAD_FILTER_TYPE type);
+static void px_biquad_ms_destroy(px_ms_biquad* ms_biquad);
 
 #define px_biquad_process(a,...) _Generic((a),			\
 	px_mono_biquad*: px_biquad_mono_process,		\
-	px_stereo_biquad*: px_biquad_stereo_process),		\
+	px_stereo_biquad*: px_biquad_stereo_process,		\
+	px_ms_biquad*: px_biquad_ms_process),			\
 		(a,__VA_ARGS__)
 
 #define px_biquad_initialize(a,b,c) _Generic((a),		\
 	px_mono_biquad*: px_biquad_mono_initialize,		\
-	px_stereo_biquad*: px_biquad_stereo_initialize),	\
+	px_stereo_biquad*: px_biquad_stereo_initialize,		\
+	px_ms_biquad*: px_biquad_ms_initialize),		\
 		(a,b,c)
 
 #define px_biquad_set_frequency(a,b) _Generic((a),		\
 	px_mono_biquad*: px_biquad_mono_set_frequency,		\
-	px_stereo_biqad*: px_biquad_stereo_set_frequency),	\
+	px_stereo_biquad*: px_biquad_stereo_set_frequency,	\
+	px_ms_biquad*: px_biquad_ms_set_frequency),		\
 		(a,b)
 
 #define px_biquad_set_quality(a,b) _Generic((a),		\
 	px_mono_biquad*: px_biquad_mono_set_quality,		\
-	px_stereo_biqad*: px_biquad_stereo_set_quality),	\
+	px_stereo_biquad*: px_biquad_stereo_set_quality,		\
+	px_ms_biquad*: px_biquad_ms_set_quality),		\
 		(a,b)
 
 #define px_biquad_set_gain(a,b) _Generic((a),			\
 	px_mono_biquad*: px_biquad_mono_set_gain,		\
-	px_stereo_biqad*: px_biquad_stereo_set_gain),		\
+	px_stereo_biquad*: px_biquad_stereo_set_gain,		\
+	px_ms_biquad*: px_biquad_ms_set_quality),		\
 		(a,b)
 
 #define px_biquad_set_type(a,b) _Generic((a),			\
 	px_mono_biquad*: px_biquad_mono_set_type,		\
-	px_stereo_biqad*: px_biquad_stereo_set_type),		\
+	px_stereo_biquad*: px_biquad_stereo_set_type,		\
+	px_ms_biquad*: px_biquad_ms_set_type),			\
 		(a,b)
 
 
@@ -86,6 +94,16 @@ static void px_biquad_stereo_set_frequency(px_stereo_biquad* biquad, float in_fr
 static void px_biquad_stereo_set_quality(px_stereo_biquad* biquad, float in_quality);
 static void px_biquad_stereo_set_gain(px_stereo_biquad* biquad, float in_gain);
 static void px_biquad_stereo_set_type(px_stereo_biquad* biquad, BIQUAD_FILTER_TYPE in_type);
+
+// mid/side
+
+static void px_biquad_ms_process(px_ms_biquad* ms_biquad, float* in_left, float* in_right);
+static void px_biquad_ms_initialize(px_ms_biquad* ms_biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
+
+static void px_biquad_ms_set_frequency(px_ms_biquad* biquad, float in_frequency);
+static void px_biquad_ms_set_quality(px_ms_biquad* biquad, float in_quality);
+static void px_biquad_ms_set_gain(px_ms_biquad* biquad, float in_gain);
+static void px_biquad_ms_set_type(px_ms_biquad* biquad, BIQUAD_FILTER_TYPE in_type);
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -123,6 +141,11 @@ struct px_stereo_biquad
    px_mono_biquad right;
 }; 
 
+struct px_ms_biquad
+{
+   px_mono_biquad mid;
+   px_mono_biquad side;
+};
 
 // inline functions
 // ----------------------------------------------------------------------------------
@@ -157,6 +180,26 @@ static void px_biquad_stereo_process(px_stereo_biquad* stereo_biquad, float* in_
     *in_right = px_biquad_filter(&stereo_biquad->right, right);
 }
 
+static void px_biquad_ms_process(px_ms_biquad* ms_biquad, float* in_left, float* in_right)
+{
+    assert(ms_biquad);
+    px_ms_decoded decoded;
+    
+    decoded.left = *in_left;
+    decoded.right = *in_right;
+
+    px_ms_encoded encoded = px_ms_encode(decoded);
+
+    encoded.mid = px_biquad_filter(&ms_biquad->mid, encoded.mid);
+    encoded.side = px_biquad_filter(&ms_biquad->side, encoded.side);
+
+    decoded = px_ms_decode(encoded);
+    
+    *in_left = decoded.left;
+    *in_right = decoded.right;
+}
+
+
 static void px_biquad_mono_initialize(px_mono_biquad* biquad, float sample_rate, BIQUAD_FILTER_TYPE type)
 {
     assert(biquad);
@@ -175,6 +218,14 @@ static void px_biquad_stereo_initialize(px_stereo_biquad* stereo_biquad, float s
     px_biquad_mono_initialize(&stereo_biquad->right, sample_rate, type);
 }
 
+static void px_biquad_ms_initialize(px_ms_biquad* ms_biquad, float sample_rate, BIQUAD_FILTER_TYPE type)
+{
+    assert(ms_biquad);
+    px_biquad_mono_initialize(&ms_biquad->mid, sample_rate, type);
+    px_biquad_mono_initialize(&ms_biquad->side, sample_rate, type);
+}
+
+
 static px_mono_biquad* px_biquad_mono_create(float sample_rate, BIQUAD_FILTER_TYPE type)
 {
     px_mono_biquad* biquad = (px_mono_biquad*)malloc(sizeof(px_mono_biquad));
@@ -189,6 +240,13 @@ static px_stereo_biquad* px_biquad_stereo_create(float sample_rate, BIQUAD_FILTE
     return stereo_biquad;
 }
 
+static px_ms_biquad* px_biquad_ms_create(float sample_rate, BIQUAD_FILTER_TYPE type)
+{
+    px_ms_biquad* ms_biquad = (px_ms_biquad*)malloc(sizeof(px_ms_biquad));
+    px_biquad_ms_initialize(ms_biquad, sample_rate, type);
+    return ms_biquad;
+}
+
 static void px_biquad_mono_destroy(px_mono_biquad* biquad)
 {
     if (biquad)
@@ -201,6 +259,11 @@ static void px_biquad_stereo_destroy(px_stereo_biquad* stereo_biquad)
 	free(stereo_biquad);
 }
 
+static void px_biquad_ms_destroy(px_ms_biquad* ms_biquad)
+{
+    if (ms_biquad)
+	free(ms_biquad);
+}
 
 static void px_biquad_mono_set_frequency(px_mono_biquad* biquad, float in_frequency)
 {
@@ -214,6 +277,13 @@ static void px_biquad_stereo_set_frequency(px_stereo_biquad* stereo_biquad, floa
     assert(stereo_biquad);
     px_biquad_mono_set_frequency(&stereo_biquad->left, in_frequency);
     px_biquad_mono_set_frequency(&stereo_biquad->right, in_frequency);
+}
+
+static void px_biquad_ms_set_frequency(px_ms_biquad* ms_biquad, float in_frequency)
+{
+    assert(ms_biquad);
+    px_biquad_mono_set_frequency(&ms_biquad->mid, in_frequency);
+    px_biquad_mono_set_frequency(&ms_biquad->side, in_frequency);
 }
 
 static void px_biquad_mono_set_quality(px_mono_biquad* biquad, float in_quality)
@@ -232,6 +302,14 @@ static void px_biquad_stereo_set_quality(px_stereo_biquad* stereo_biquad, float 
     px_biquad_mono_set_quality(&stereo_biquad->right, in_quality);
 }
 
+static void px_biquad_ms_set_quality(px_ms_biquad* ms_biquad, float in_quality)
+{
+    assert(ms_biquad);
+    px_biquad_mono_set_quality(&ms_biquad->mid, in_quality);
+    px_biquad_mono_set_quality(&ms_biquad->side, in_quality);
+}
+
+
 static void px_biquad_mono_set_gain(px_mono_biquad* biquad, float in_gain)
 {
     assert(biquad);
@@ -246,6 +324,14 @@ static void px_biquad_stereo_set_gain(px_stereo_biquad* stereo_biquad, float in_
     px_biquad_mono_set_gain(&stereo_biquad->right, in_gain);
 }
 
+static void px_biquad_ms_set_gain(px_ms_biquad* ms_biquad, float in_gain)
+{
+    assert(ms_biquad);
+    px_biquad_mono_set_gain(&ms_biquad->mid, in_gain);
+    px_biquad_mono_set_gain(&ms_biquad->side, in_gain);
+}
+
+
 static void px_biquad_mono_set_type(px_mono_biquad* biquad, BIQUAD_FILTER_TYPE in_type)
 {
     assert(biquad);
@@ -259,6 +345,14 @@ static void px_biquad_stereo_set_type(px_stereo_biquad* stereo_biquad, BIQUAD_FI
     px_biquad_mono_set_type(&stereo_biquad->left, in_type);
     px_biquad_mono_set_type(&stereo_biquad->right, in_type);
 }
+
+static void px_biquad_ms_set_type(px_ms_biquad* ms_biquad, BIQUAD_FILTER_TYPE in_type)
+{
+    assert(ms_biquad);
+    px_biquad_mono_set_type(&ms_biquad->mid, in_type);
+    px_biquad_mono_set_type(&ms_biquad->side, in_type);
+}
+
 
 // ------------------------------------------------------------------------------------------------------------------------------
 

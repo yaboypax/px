@@ -23,5 +23,38 @@ static inline float dB2lin(float dB) {
     return exp(dB * DB_2_LOG);
 }
 // -------------------------------------
+//
+// Mid Side
+//
+//
+typedef struct
+{
+    float left;
+    float right;
+} px_ms_decoded;
+
+typedef struct
+{
+    float mid;
+    float side;
+} px_ms_encoded;
+
+
+static inline px_ms_encoded px_ms_encode(px_ms_decoded decoded)
+{
+	px_ms_encoded encoded;
+	encoded.mid = 0.5f * (decoded.left + decoded.right);
+	encoded.side = 0.5f * (decoded.left - decoded.right);
+	return encoded;
+}
+
+static inline px_ms_decoded px_ms_decode(px_ms_encoded encoded)
+{
+	px_ms_decoded decoded;
+	decoded.left = encoded.mid + encoded.side;
+	decoded.right = encoded.mid - encoded.side;
+	return decoded;
+}
+
 
 #endif 
