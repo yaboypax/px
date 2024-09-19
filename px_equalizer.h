@@ -56,6 +56,16 @@ static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, 
 static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel);
 
 // mid/side
+static void px_equalizer_ms_process(px_ms_equalizer* ms_equalizer, float* input_left, float* input_right);
+static void px_equalizer_ms_initialize(px_ms_equalizer* ms_equalizer, float sample_rate);
+static void px_equalizer_ms_add_band(px_ms_equalizer* ms_equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type);
+static void px_equalizer_ms_remove_band(px_ms_equalizer* ms_equalizer, size_t index);
+
+static void px_equalizer_ms_set_frequency(px_ms_equalizer* ms_equalizer, size_t index, float in_frequency, CHANNEL_FLAG channel);
+static void px_equalizer_ms_set_quality(px_ms_equalizer* ms_equalizer, size_t index, float in_quality, CHANNEL_FLAG channel);
+static void px_equalizer_ms_set_gain(px_ms_equalizer* ms_equalizer, size_t index, float in_gain, CHANNEL_FLAG channel);
+static void px_equalizer_ms_set_type(px_ms_equalizer* ms_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel);
+
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -76,6 +86,26 @@ static void px_equalizer_stereo_process(px_stereo_equalizer* stereo_equalizer, f
 
 }
 
+static void px_equalizer_ms_process(px_ms_equalizer* ms_equalizer, float* input_left, float* input_right)
+{
+    assert(ms_equalizer);
+    px_ms_decoded decoded;
+    
+    decoded.left = *input_left;
+    decoded.right = *input_right;
+
+    px_ms_encoded encoded = px_ms_encode(decoded);
+
+    px_equalizer_mono_process(&ms_equalizer->mid, &encoded.mid);
+    px_equalizer_mono_process(&ms_equalizer->side, &encoded.side);
+
+    decoded = px_ms_decode(encoded);
+    
+    *input_left = decoded.left;
+    *input_right = decoded.right;
+}
+
+
 static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sample_rate)
 {
 	assert(equalizer);
@@ -90,6 +120,13 @@ static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereo_equalizer
      assert(stereo_equalizer);
      px_equalizer_mono_initialize(&stereo_equalizer->left, sample_rate);
      px_equalizer_mono_initialize(&stereo_equalizer->right, sample_rate);
+}
+
+static void px_equalizer_ms_initialize(px_ms_equalizer* ms_equalizer, float sample_rate)
+{
+     assert(ms_equalizer);
+     px_equalizer_mono_initialize(&ms_equalizer->mid, sample_rate);
+     px_equalizer_mono_initialize(&ms_equalizer->side, sample_rate);
 }
 
 
@@ -113,6 +150,14 @@ static void px_equalizer_stereo_add_band(px_stereo_equalizer* stereo_equalizer, 
     px_equalizer_mono_add_band(&stereo_equalizer->right, frequency, quality, gain, type);
 }
 
+static void px_equalizer_ms_add_band(px_ms_equalizer* ms_equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type)
+{
+    assert(ms_equalizer);
+    px_equalizer_mono_add_band(&ms_equalizer->mid, frequency, quality, gain, type);
+    px_equalizer_mono_add_band(&ms_equalizer->side, frequency, quality, gain, type);
+}
+
+
 static void px_equalizer_mono_remove_band(px_mono_equalizer* equalizer, size_t index)
 {
     if (index < equalizer->num_bands)
@@ -128,6 +173,14 @@ static void px_equalizer_stereo_remove_band(px_stereo_equalizer* stereo_equalize
     assert(stereo_equalizer);
     px_equalizer_mono_remove_band(&stereo_equalizer->left, index); 
     px_equalizer_mono_remove_band(&stereo_equalizer->right, index);
+}
+
+
+static void px_equalizer_ms_remove_band(px_ms_equalizer* ms_equalizer, size_t index)
+{
+    assert(ms_equalizer);
+    px_equalizer_mono_remove_band(&ms_equalizer->mid, index);
+    px_equalizer_mono_remove_band(&ms_equalizer->side, index);
 }
 
 
@@ -162,6 +215,28 @@ static void px_equalizer_stereo_set_frequency(px_stereo_equalizer* stereo_equali
     }
 }
 
+static void px_equalizer_ms_set_frequency(px_ms_equalizer* ms_equalizer, size_t index, float in_frequency, CHANNEL_FLAG channel)
+{
+    assert(ms_equalizer);
+    switch (channel)
+    {
+	case BOTH:
+	{
+		px_equalizer_mono_set_frequency(&ms_equalizer->mid, index, in_frequency);
+		px_equalizer_mono_set_frequency(&ms_equalizer->side, index, in_frequency);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_frequency(&ms_equalizer->mid, index, in_frequency);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_frequency(&ms_equalizer->side, index, in_frequency);
+    	}
+    }
+}
+
+
 static void px_equalizer_mono_set_quality(px_mono_equalizer* equalizer, size_t index, float in_quality)
 {
     assert(equalizer);
@@ -172,7 +247,7 @@ static void px_equalizer_mono_set_quality(px_mono_equalizer* equalizer, size_t i
     }
 }
 
-static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalizer, size_t index, float in_quality,CHANNEL_FLAG channel)
+static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalizer, size_t index, float in_quality, CHANNEL_FLAG channel)
 {
     assert(stereo_equalizer);
     switch (channel)
@@ -192,6 +267,28 @@ static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalize
     	}
     }
 }
+
+static void px_equalizer_ms_set_quality(px_ms_equalizer* ms_equalizer, size_t index, float in_quality, CHANNEL_FLAG channel)
+{
+    assert(ms_equalizer);
+    switch (channel)
+    {
+	case BOTH:
+	{
+		px_equalizer_mono_set_quality(&ms_equalizer->mid, index, in_quality);
+		px_equalizer_mono_set_quality(&ms_equalizer->side, index, in_quality);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_quality(&ms_equalizer->mid, index, in_quality);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_quality(&ms_equalizer->side, index, in_quality);
+    	}
+    }
+}
+
 
 static void px_equalizer_mono_set_gain(px_mono_equalizer* equalizer, size_t index, float in_gain)
 {
@@ -220,6 +317,27 @@ static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, 
 	case RIGHT:
 	{
 		px_equalizer_mono_set_gain(&stereo_equalizer->right, index, in_gain);
+    	}
+    }
+}
+
+static void px_equalizer_ms_set_gain(px_ms_equalizer* ms_equalizer, size_t index, float in_gain, CHANNEL_FLAG channel)
+{
+    assert(ms_equalizer);
+    switch (channel)
+    {
+	case BOTH:
+	{
+		px_equalizer_mono_set_gain(&ms_equalizer->mid, index, in_gain);
+		px_equalizer_mono_set_gain(&ms_equalizer->side, index, in_gain);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_gain(&ms_equalizer->mid, index, in_gain);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_gain(&ms_equalizer->side, index, in_gain);
     	}
     }
 }
@@ -254,4 +372,26 @@ static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, 
     	}
     }
 }
+
+static void px_equalizer_ms_set_type(px_ms_equalizer* ms_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel)
+{
+    assert(ms_equalizer);
+    switch (channel)
+    {
+	case BOTH:
+	{
+		px_equalizer_mono_set_type(&ms_equalizer->mid, index, in_type);
+		px_equalizer_mono_set_type(&ms_equalizer->side, index, in_type);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_type(&ms_equalizer->mid, index, in_type);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_type(&ms_equalizer->side, index, in_type);
+    	}
+    }
+}
+
 
