@@ -3,6 +3,14 @@
 
 #define MAX_BANDS 24
 
+typedef enum
+{
+    BOTH=0,
+    LEFT,
+    RIGHT,
+    MID,
+    SIDE
+} CHANNEL_FLAG;
 
 typedef struct 
 {
@@ -13,11 +21,15 @@ typedef struct
 
 typedef struct 
 {
-   px_vector filter_bank;   // type-generic vector filled with px_stereo_biquad filters
-   float sample_rate;
-   int num_bands;
+   px_mono_equalizer left;
+   px_mono_equalizer right;
 } px_stereo_equalizer;
 
+typedef struct 
+{
+   px_mono_equalizer mid;
+   px_mono_equalizer side;
+} px_ms_equalizer;
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -38,11 +50,12 @@ static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereo_equalizer
 static void px_equalizer_stereo_add_band(px_stereo_equalizer* stereo_equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type);
 static void px_equalizer_stereo_remove_band(px_stereo_equalizer* stereo_equalizer, size_t index);
 
-static void px_equalizer_stereo_set_frequency(px_stereo_equalizer* stereo_equalizer, size_t index, float in_frequency);
-static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalizer, size_t index, float in_quality);
-static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, size_t index, float in_gain);
-static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type);
+static void px_equalizer_stereo_set_frequency(px_stereo_equalizer* stereo_equalizer, size_t index, float in_frequency, CHANNEL_FLAG channel);
+static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalizer, size_t index, float in_quality, CHANNEL_FLAG channel);
+static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, size_t index, float in_gain, CHANNEL_FLAG channel);
+static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel);
 
+// mid/side
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -58,10 +71,9 @@ static void px_equalizer_mono_process(px_mono_equalizer* equalizer, float* input
 static void px_equalizer_stereo_process(px_stereo_equalizer* stereo_equalizer, float* input_left, float* input_right)
 {
      assert(stereo_equalizer);
-     for (int i = 0; i < stereo_equalizer->num_bands; ++i)
-     {
-     	px_biquad_stereo_process((px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, i), input_left, input_right);
-     }     
+     px_equalizer_mono_process(&stereo_equalizer->left, input_left);
+     px_equalizer_mono_process(&stereo_equalizer->right, input_right);
+
 }
 
 static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sample_rate)
@@ -75,12 +87,11 @@ static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sam
 
 static void px_equalizer_stereo_initialize(px_stereo_equalizer* stereo_equalizer, float sample_rate)
 {
-    assert(stereo_equalizer);
-    stereo_equalizer->sample_rate = sample_rate;
-    stereo_equalizer->num_bands = 0;
-
-    px_vector_initialize(&stereo_equalizer->filter_bank);
+     assert(stereo_equalizer);
+     px_equalizer_mono_initialize(&stereo_equalizer->left, sample_rate);
+     px_equalizer_mono_initialize(&stereo_equalizer->right, sample_rate);
 }
+
 
 static void px_equalizer_mono_add_band(px_mono_equalizer* equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type)
 {
@@ -98,14 +109,8 @@ static void px_equalizer_mono_add_band(px_mono_equalizer* equalizer, float frequ
 static void px_equalizer_stereo_add_band(px_stereo_equalizer* stereo_equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type)
 {
     assert(stereo_equalizer);
-    px_stereo_biquad* new_filter = px_biquad_stereo_create(stereo_equalizer->sample_rate, type);
-
-    px_biquad_stereo_set_frequency(new_filter, frequency);
-    px_biquad_stereo_set_quality(new_filter, quality);
-    px_biquad_stereo_set_gain(new_filter, gain);
-
-    px_vector_push(&stereo_equalizer->filter_bank, new_filter);
-    stereo_equalizer->num_bands++;
+    px_equalizer_mono_add_band(&stereo_equalizer->left, frequency, quality, gain, type);
+    px_equalizer_mono_add_band(&stereo_equalizer->right, frequency, quality, gain, type);
 }
 
 static void px_equalizer_mono_remove_band(px_mono_equalizer* equalizer, size_t index)
@@ -120,12 +125,9 @@ static void px_equalizer_mono_remove_band(px_mono_equalizer* equalizer, size_t i
 
 static void px_equalizer_stereo_remove_band(px_stereo_equalizer* stereo_equalizer, size_t index)
 {
-    if (index < stereo_equalizer->num_bands)
-    {
-	px_biquad_stereo_destroy((px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index));
-	px_vector_remove(&stereo_equalizer->filter_bank, index);
-	stereo_equalizer->num_bands--;
-    }
+    assert(stereo_equalizer);
+    px_equalizer_mono_remove_band(&stereo_equalizer->left, index); 
+    px_equalizer_mono_remove_band(&stereo_equalizer->right, index);
 }
 
 
@@ -139,13 +141,24 @@ static void px_equalizer_mono_set_frequency(px_mono_equalizer* equalizer, size_t
     }
 }
 
-static void px_equalizer_stereo_set_frequency(px_stereo_equalizer* stereo_equalizer, size_t index, float in_frequency)
+static void px_equalizer_stereo_set_frequency(px_stereo_equalizer* stereo_equalizer, size_t index, float in_frequency, CHANNEL_FLAG channel)
 {
     assert(stereo_equalizer);
-    if (index < stereo_equalizer->num_bands)
+    switch (channel)
     {
-	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
-	px_biquad_stereo_set_frequency(filter, in_frequency);
+	case BOTH:
+	{
+		px_equalizer_mono_set_frequency(&stereo_equalizer->left, index, in_frequency);
+		px_equalizer_mono_set_frequency(&stereo_equalizer->right, index, in_frequency);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_frequency(&stereo_equalizer->left, index, in_frequency);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_frequency(&stereo_equalizer->right, index, in_frequency);
+    	}
     }
 }
 
@@ -159,13 +172,24 @@ static void px_equalizer_mono_set_quality(px_mono_equalizer* equalizer, size_t i
     }
 }
 
-static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalizer, size_t index, float in_quality)
+static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalizer, size_t index, float in_quality,CHANNEL_FLAG channel)
 {
     assert(stereo_equalizer);
-    if (index < stereo_equalizer->num_bands)
+    switch (channel)
     {
-	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
-	px_biquad_stereo_set_quality(filter, in_quality);
+	case BOTH:
+	{
+		px_equalizer_mono_set_quality(&stereo_equalizer->left, index, in_quality);
+		px_equalizer_mono_set_quality(&stereo_equalizer->right, index, in_quality);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_quality(&stereo_equalizer->left, index, in_quality);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_quality(&stereo_equalizer->right, index, in_quality);
+    	}
     }
 }
 
@@ -179,13 +203,24 @@ static void px_equalizer_mono_set_gain(px_mono_equalizer* equalizer, size_t inde
     }
 }
 
-static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, size_t index, float in_gain)
+static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, size_t index, float in_gain, CHANNEL_FLAG channel)
 {
     assert(stereo_equalizer);
-    if (index < stereo_equalizer->num_bands)
+    switch (channel)
     {
-	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
-	px_biquad_stereo_set_gain(filter, in_gain);
+	case BOTH:
+	{
+		px_equalizer_mono_set_gain(&stereo_equalizer->left, index, in_gain);
+		px_equalizer_mono_set_gain(&stereo_equalizer->right, index, in_gain);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_gain(&stereo_equalizer->left, index, in_gain);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_gain(&stereo_equalizer->right, index, in_gain);
+    	}
     }
 }
 
@@ -199,14 +234,24 @@ static void px_equalizer_mono_set_type(px_mono_equalizer* equalizer, size_t inde
     }
 }
 
-static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type)
+static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel)
 {
     assert(stereo_equalizer);
-    if (index < stereo_equalizer->num_bands)
+    switch (channel)
     {
-	px_stereo_biquad* filter = (px_stereo_biquad*)px_vector_get(&stereo_equalizer->filter_bank, index);
-	px_biquad_stereo_set_type(filter, in_type);
+	case BOTH:
+	{
+		px_equalizer_mono_set_type(&stereo_equalizer->left, index, in_type);
+		px_equalizer_mono_set_type(&stereo_equalizer->right, index, in_type);
+	}
+	case LEFT:
+	{	
+		px_equalizer_mono_set_type(&stereo_equalizer->left, index, in_type);
+	}
+	case RIGHT:
+	{
+		px_equalizer_mono_set_type(&stereo_equalizer->right, index, in_type);
+    	}
     }
-
 }
 
