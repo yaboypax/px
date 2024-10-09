@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#include "px_biquad.h"
+#include "px_equalizer.h"
 #include "px_memory.h"
 
 #ifdef __cplusplus
@@ -42,7 +42,7 @@ typedef struct
     px_envelope_detector attack;
     px_envelope_detector release;
 
-    px_mono_biquad sidechain_filter;
+    px_mono_equalizer sidechain_equalizer;
 } px_mono_compressor;
 
 typedef struct 
@@ -51,7 +51,7 @@ typedef struct
     px_mono_compressor right;
    
     px_compressor_parameters parameters; 
-    px_stereo_biquad sidechain_filter;
+    px_stereo_equalizer sidechain_equalizer;
 } px_stereo_compressor;
 
 typedef struct
@@ -60,7 +60,7 @@ typedef struct
     px_mono_compressor stereo;
     
     px_compressor_parameters parameters;
-    //px_ms_biquad sidechain_filter;    
+    px_ms_equalizer sidechain_equalizer;    
 } px_ms_compressor;
 	 
 // API functions
@@ -218,7 +218,7 @@ static void px_compressor_mono_process(px_mono_compressor* compressor, float* in
     assert(compressor);
     //sidechain eq
     float sidechain = *input;
-    px_biquad_mono_process(&compressor->sidechain_filter, &sidechain);
+    px_equalizer_mono_process(&compressor->sidechain_equalizer, &sidechain);
     *input = px_compressor_compress(compressor, *input, sidechain);
 }
 
@@ -230,7 +230,7 @@ static void px_compressor_stereo_process(px_stereo_compressor* stereo_compressor
     float sidechain_left = *input_left;
     float sidechain_right = *input_right;
 
-    px_biquad_stereo_process(&stereo_compressor->sidechain_filter, &sidechain_left, &sidechain_right);
+    px_equalizer_stereo_process(&stereo_compressor->sidechain_equalizer, &sidechain_left, &sidechain_right);
 
     float input_absolute_left = fabsf(sidechain_left);
     float input_absolute_right = fabsf(sidechain_right); /* put here: rms smoothing */
@@ -249,9 +249,9 @@ static void px_compressor_mono_initialize(px_mono_compressor* compressor, float 
 {
     assert(compressor);
 
-    px_mono_biquad filter;
-    px_biquad_mono_initialize(&filter, in_sample_rate, BIQUAD_HIGHPASS);
-    px_biquad_mono_set_frequency(&filter, 0.f);
+    px_mono_equalizer equalizer;
+    px_equalizer_mono_initialize(&equalizer, in_sample_rate, BIQUAD_HIGHPASS);
+    px_equalizer_mono_set_frequency(&equalizer, 0.f);
 
     px_compressor_parameters new_parameters = INITIALIZED_PARAMETERS;
     compressor->parameters = new_parameters;
@@ -270,10 +270,10 @@ static void px_compressor_stereo_initialize(px_stereo_compressor* stereo_compres
 {
     assert(stereo_compressor);
     
-    px_stereo_biquad filter;
-    px_biquad_stereo_initialize(&filter, in_sample_rate, BIQUAD_HIGHPASS);
-    px_biquad_stereo_set_frequency(&filter, 0.f);
-    stereo_compressor->sidechain_filter = filter;
+    px_stereo_equalizer equalizer;
+    px_equalizer_stereo_initialize(&equalizer, in_sample_rate, BIQUAD_HIGHPASS);
+    px_equalizer_stereo_set_frequency(&equalizer, 0.f);
+    stereo_compressor->sidechain_equalizer = equalizer;
 
     px_compressor_parameters new_parameters = INITIALIZED_PARAMETERS; 
     stereo_compressor->parameters = new_parameters;
@@ -391,50 +391,50 @@ static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereo_co
 static void px_compressor_mono_set_sidechain_frequency(px_mono_compressor* compressor, float in_frequency)
 {
     assert(compressor);
-    px_biquad_mono_set_frequency(&compressor->sidechain_filter, in_frequency);
+    px_equalizer_mono_set_frequency(&compressor->sidechain_equalizer, in_frequency);
 }
 
 static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* stereo_compressor, float in_frequency)
 {
     assert(stereo_compressor);
-    px_biquad_stereo_set_frequency(&stereo_compressor->sidechain_filter, in_frequency);
+    px_equalizer_stereo_set_frequency(&stereo_compressor->sidechain_equalizer, in_frequency);
 }
 
  
 static void px_compressor_mono_set_sidechain_quality(px_mono_compressor* compressor, float in_quality)
 {
     assert(compressor);
-    px_biquad_mono_set_quality(&compressor->sidechain_filter, in_quality);
+    px_equalizer_mono_set_quality(&compressor->sidechain_equalizer, in_quality);
 }
 
 static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* stereo_compressor, float in_quality)
 {
     assert(stereo_compressor);
-    px_biquad_stereo_set_quality(&stereo_compressor->sidechain_filter, in_quality);
+    px_equalizer_stereo_set_quality(&stereo_compressor->sidechain_equalizer, in_quality);
 }
 
 static void px_compressor_mono_set_sidechain_gain(px_mono_compressor* compressor, float in_gain)
 {
     assert(compressor);
-    px_biquad_mono_set_gain(&compressor->sidechain_filter, in_gain);
+    px_equalizer_mono_set_gain(&compressor->sidechain_equalizer, in_gain);
 }
 
 static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* stereo_compressor, float in_gain)
 {
     assert(stereo_compressor);
-    px_biquad_stereo_set_gain(&stereo_compressor->sidechain_filter, in_gain);
+    px_equalizer_stereo_set_gain(&stereo_compressor->sidechain_equalizer, in_gain);
 }
 
 static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor, BIQUAD_FILTER_TYPE in_type)
 {
     assert(compressor);
-    px_biquad_mono_set_type(&compressor->sidechain_filter, in_type);
+    px_equalizer_mono_set_type(&compressor->sidechain_equalizer, in_type);
 }
 
 static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* stereo_compressor, BIQUAD_FILTER_TYPE in_type)
 {
     assert(stereo_compressor);
-    px_biquad_stereo_set_type(&stereo_compressor->sidechain_filter, in_type);
+    px_equalizer_stereo_set_type(&stereo_compressor->sidechain_equalizer, in_type);
 }
 // ----------------------------------------------------------------------------------------------------------------------
 
