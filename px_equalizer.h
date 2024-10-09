@@ -1,11 +1,12 @@
-#include "px_biquad.h"
-#include "px_vector.h"
-#include "px_globals.h"
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+#include "px_biquad.h"
+#include "px_vector.h"
+#include "px_globals.h"
+
 
 #define MAX_BANDS 24
 

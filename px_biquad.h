@@ -19,24 +19,6 @@ typedef enum {
    BIQUAD_ALLPASS
 } BIQUAD_FILTER_TYPE;
 
-// api functions
-// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//
-static px_biquad* px_biquad_create(float sample_rate, BIQUAD_FILTER_TYPE type); 
-static void px_biquad_destroy(px_biquad* biquad);
-
-static void px_biquad_process(px_biquad* biquad, float* input);
-static void px_biquad_initialize(px_biquad* biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
-
-static void px_biquad_set_frequency(px_biquad* biquad, float in_frequency);
-static void px_biquad_set_quality(px_biquad* biquad, float in_quality);
-static void px_biquad_set_gain(px_biquad* biquad, float in_gain);
-static void px_biquad_set_type(px_biquad* biquad, BIQUAD_FILTER_TYPE in_type);
-
-// ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-//private
-
 typedef struct 
 {
    float a0;
@@ -57,12 +39,28 @@ typedef struct
    BIQUAD_FILTER_TYPE type;
 } px_biquad_parameters;
 
-typedef struct px_biquad
+typedef struct
 {
    px_biquad_coefficients coefficients;
    px_biquad_parameters parameters;
-};
+} px_biquad;
 
+
+// api functions
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//
+static px_biquad* px_biquad_create(float sample_rate, BIQUAD_FILTER_TYPE type); 
+static void px_biquad_destroy(px_biquad* biquad);
+
+static void px_biquad_process(px_biquad* biquad, float* input);
+static void px_biquad_initialize(px_biquad* biquad, float sample_rate, BIQUAD_FILTER_TYPE type);
+
+static void px_biquad_set_frequency(px_biquad* biquad, float in_frequency);
+static void px_biquad_set_quality(px_biquad* biquad, float in_quality);
+static void px_biquad_set_gain(px_biquad* biquad, float in_gain);
+static void px_biquad_set_type(px_biquad* biquad, BIQUAD_FILTER_TYPE in_type);
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // inline functions
 // ----------------------------------------------------------------------------------
 

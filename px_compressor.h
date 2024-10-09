@@ -156,10 +156,10 @@ static void px_compressor_stereo_set_attack(px_stereo_compressor* stereo_compres
 static void px_compressor_stereo_set_release(px_stereo_compressor* stereo_compressor, float in_release);
 static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereo_compressor, float in_gain);
 
-static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* compressor, float in_frequency);
-static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* compressor, float in_quality);
-static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* compressor, float in_gain);
-static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* compressor, BIQUAD_FILTER_TYPE in_type);
+static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* compressor, float in_frequency, CHANNEL_FLAG channel);
+static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* compressor, float in_quality, CHANNEL_FLAG channel);
+static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* compressor, float in_gain, CHANNEL_FLAG channel);
+static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* compressor, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel);
 
 // ----------------------------------------------------------------------------------------------------------------------
 
@@ -250,8 +250,9 @@ static void px_compressor_mono_initialize(px_mono_compressor* compressor, float 
     assert(compressor);
 
     px_mono_equalizer equalizer;
-    px_equalizer_mono_initialize(&equalizer, in_sample_rate, BIQUAD_HIGHPASS);
-    px_equalizer_mono_set_frequency(&equalizer, 0.f);
+    px_equalizer_mono_initialize(&equalizer, in_sample_rate);
+    px_equalizer_mono_add_band(&equalizer, 0.f, 1.f, 0.f, BIQUAD_HIGHPASS);
+    compressor->sidechain_equalizer = equalizer;
 
     px_compressor_parameters new_parameters = INITIALIZED_PARAMETERS;
     compressor->parameters = new_parameters;
@@ -269,10 +270,11 @@ static void px_compressor_mono_initialize(px_mono_compressor* compressor, float 
 static void px_compressor_stereo_initialize(px_stereo_compressor* stereo_compressor, float in_sample_rate)
 {
     assert(stereo_compressor);
-    
+
     px_stereo_equalizer equalizer;
-    px_equalizer_stereo_initialize(&equalizer, in_sample_rate, BIQUAD_HIGHPASS);
-    px_equalizer_stereo_set_frequency(&equalizer, 0.f);
+    px_equalizer_stereo_initialize(&equalizer, in_sample_rate);
+    px_equalizer_stereo_add_band(&equalizer, 0.f, 1.f, 0.f, BIQUAD_HIGHPASS);
+
     stereo_compressor->sidechain_equalizer = equalizer;
 
     px_compressor_parameters new_parameters = INITIALIZED_PARAMETERS; 
@@ -387,54 +389,55 @@ static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* stereo_co
     px_compressor_mono_set_makeup_gain(&stereo_compressor->left, in_gain);
     px_compressor_mono_set_makeup_gain(&stereo_compressor->right, in_gain);
 }
- 
+
+// sidechain 
+
 static void px_compressor_mono_set_sidechain_frequency(px_mono_compressor* compressor, float in_frequency)
 {
     assert(compressor);
-    px_equalizer_mono_set_frequency(&compressor->sidechain_equalizer, in_frequency);
+    px_equalizer_mono_set_frequency(&compressor->sidechain_equalizer, 0, in_frequency);
 }
 
-static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* stereo_compressor, float in_frequency)
+static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* stereo_compressor, float in_frequency, CHANNEL_FLAG channel)
 {
     assert(stereo_compressor);
-    px_equalizer_stereo_set_frequency(&stereo_compressor->sidechain_equalizer, in_frequency);
+    px_equalizer_stereo_set_frequency(&stereo_compressor->sidechain_equalizer, 0, in_frequency, channel);
 }
-
  
 static void px_compressor_mono_set_sidechain_quality(px_mono_compressor* compressor, float in_quality)
 {
     assert(compressor);
-    px_equalizer_mono_set_quality(&compressor->sidechain_equalizer, in_quality);
+    px_equalizer_mono_set_quality(&compressor->sidechain_equalizer, 0, in_quality);
 }
 
-static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* stereo_compressor, float in_quality)
+static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* stereo_compressor, float in_quality, CHANNEL_FLAG channel)
 {
     assert(stereo_compressor);
-    px_equalizer_stereo_set_quality(&stereo_compressor->sidechain_equalizer, in_quality);
+    px_equalizer_stereo_set_quality(&stereo_compressor->sidechain_equalizer, 0, in_quality, channel);
 }
 
 static void px_compressor_mono_set_sidechain_gain(px_mono_compressor* compressor, float in_gain)
 {
     assert(compressor);
-    px_equalizer_mono_set_gain(&compressor->sidechain_equalizer, in_gain);
+    px_equalizer_mono_set_gain(&compressor->sidechain_equalizer, 0, in_gain);
 }
 
-static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* stereo_compressor, float in_gain)
+static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* stereo_compressor, float in_gain, CHANNEL_FLAG channel)
 {
     assert(stereo_compressor);
-    px_equalizer_stereo_set_gain(&stereo_compressor->sidechain_equalizer, in_gain);
+    px_equalizer_stereo_set_gain(&stereo_compressor->sidechain_equalizer, 0, in_gain, channel);
 }
 
 static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor, BIQUAD_FILTER_TYPE in_type)
 {
     assert(compressor);
-    px_equalizer_mono_set_type(&compressor->sidechain_equalizer, in_type);
+    px_equalizer_mono_set_type(&compressor->sidechain_equalizer, 0, in_type);
 }
 
-static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* stereo_compressor, BIQUAD_FILTER_TYPE in_type)
+static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* stereo_compressor, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel)
 {
     assert(stereo_compressor);
-    px_equalizer_stereo_set_type(&stereo_compressor->sidechain_equalizer, in_type);
+    px_equalizer_stereo_set_type(&stereo_compressor->sidechain_equalizer, 0, in_type, channel);
 }
 // ----------------------------------------------------------------------------------------------------------------------
 
