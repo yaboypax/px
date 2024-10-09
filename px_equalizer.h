@@ -1,8 +1,12 @@
 #include "px_biquad.h"
 #include "px_vector.h"
+#include "px_globals.h"
 
+#ifdef __cplusplus
 extern "C"
 {
+#endif
+
 #define MAX_BANDS 24
 
 	typedef enum
@@ -35,6 +39,7 @@ extern "C"
 
 	// ----------------------------------------------------------------------------------------------------
 
+#ifdef PX_USE_GENERIC
 
 #define px_equalizer_process(a,b,...) _Generic((a),		\
 	px_mono_equalizer*: px_equalizer_mono_process,		\
@@ -84,7 +89,7 @@ extern "C"
 	px_stereo_equalizer*: px_equalizer_stereo_set_type,		\
 	px_ms_equalizer*: px_equalizer_ms_set_type)			\
 		(a,b,c,__VA_ARGS__)
-
+#endif
 
 // mono
 	static void px_equalizer_mono_process(px_mono_equalizer* equalizer, float* input);
@@ -142,7 +147,7 @@ extern "C"
 	static void px_equalizer_ms_process(px_ms_equalizer* ms_equalizer, float* input_left, float* input_right)
 	{
 		assert(ms_equalizer);
-		px_ms_decoded decoded{ 0.f, 0.f };
+		px_ms_decoded decoded = { 0.f, 0.f };
 
 		decoded.left = *input_left;
 		decoded.right = *input_right;
@@ -447,5 +452,6 @@ extern "C"
 		}
 	}
 
-
+#ifdef __cplusplus
 }
+#endif

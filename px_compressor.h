@@ -5,6 +5,9 @@
 #include "px_biquad.h"
 #include "px_memory.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -71,6 +74,7 @@ static void px_compressor_mono_destroy(px_mono_compressor* compressor);
 static px_stereo_compressor* px_compressor_stereo_create(float in_sample_rate);
 static void px_compressor_stereo_destroy(px_stereo_compressor* stereo_compressor);
 
+#ifdef PX_USE_GENERICS
 
 #define px_compressor_process(a,...) _Generic((a),			\
 	px_mono_compressor*: px_compressor_mono_process,		\
@@ -116,7 +120,7 @@ static void px_compressor_stereo_destroy(px_stereo_compressor* stereo_compressor
 	px_mono_compressor*: px_compressor_mono_set_makeup_gain,	\
 	px_stereo_compressor*: px_compressor_stereo_set_makeup_gain),	\
 		(a,b)
-
+#endif
 
 
 
@@ -526,3 +530,6 @@ static inline float px_compressor_compress(px_mono_compressor* compressor, float
 
 }	
 
+#ifdef __cplusplus
+}
+#endif
