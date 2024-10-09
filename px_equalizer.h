@@ -132,7 +132,7 @@ extern "C"
 		assert(equalizer);
 		for (int i = 0; i < equalizer->num_bands; ++i)
 		{
-			px_biquad_mono_process((px_mono_biquad*)px_vector_get(&equalizer->filter_bank, i), input);
+			px_biquad_process((px_biquad*)px_vector_get(&equalizer->filter_bank, i), input);
 		}
 	}
 
@@ -191,11 +191,11 @@ extern "C"
 	static void px_equalizer_mono_add_band(px_mono_equalizer* equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type)
 	{
 		assert(equalizer);
-		px_mono_biquad* new_filter = px_biquad_mono_create(equalizer->sample_rate, type);
+		px_biquad* new_filter = px_biquad_create(equalizer->sample_rate, type);
 
-		px_biquad_mono_set_frequency(new_filter, frequency);
-		px_biquad_mono_set_quality(new_filter, quality);
-		px_biquad_mono_set_gain(new_filter, gain);
+		px_biquad_set_frequency(new_filter, frequency);
+		px_biquad_set_quality(new_filter, quality);
+		px_biquad_set_gain(new_filter, gain);
 
 		px_vector_push(&equalizer->filter_bank, new_filter);
 		equalizer->num_bands++;
@@ -220,7 +220,7 @@ extern "C"
 	{
 		if (index < equalizer->num_bands)
 		{
-			px_biquad_mono_destroy((px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index));
+			px_biquad_destroy((px_biquad*)px_vector_get(&equalizer->filter_bank, index));
 			px_vector_remove(&equalizer->filter_bank, index);
 			equalizer->num_bands--;
 		}
@@ -247,8 +247,8 @@ extern "C"
 		assert(equalizer);
 		if (index < equalizer->num_bands)
 		{
-			px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
-			px_biquad_mono_set_frequency(filter, in_frequency);
+			px_biquad* filter = (px_biquad*)px_vector_get(&equalizer->filter_bank, index);
+			px_biquad_set_frequency(filter, in_frequency);
 		}
 	}
 
@@ -300,8 +300,8 @@ extern "C"
 		assert(equalizer);
 		if (index < equalizer->num_bands)
 		{
-			px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
-			px_biquad_mono_set_quality(filter, in_quality);
+			px_biquad* filter = (px_biquad*)px_vector_get(&equalizer->filter_bank, index);
+			px_biquad_set_quality(filter, in_quality);
 		}
 	}
 
@@ -353,8 +353,8 @@ extern "C"
 		assert(equalizer);
 		if (index < equalizer->num_bands)
 		{
-			px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
-			px_biquad_mono_set_gain(filter, in_gain);
+			px_biquad* filter = (px_biquad*)px_vector_get(&equalizer->filter_bank, index);
+			px_biquad_set_gain(filter, in_gain);
 		}
 	}
 
@@ -405,8 +405,8 @@ extern "C"
 		assert(equalizer);
 		if (index < equalizer->num_bands)
 		{
-			px_mono_biquad* filter = (px_mono_biquad*)px_vector_get(&equalizer->filter_bank, index);
-			px_biquad_mono_set_type(filter, in_type);
+			px_biquad* filter = (px_biquad*)px_vector_get(&equalizer->filter_bank, index);
+			px_biquad_set_type(filter, in_type);
 		}
 	}
 
