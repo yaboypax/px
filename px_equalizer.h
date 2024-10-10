@@ -116,6 +116,7 @@ extern "C"
 
 	// mid/side
 	static void px_equalizer_ms_process(px_ms_equalizer* ms_equalizer, float* input_left, float* input_right);
+	static px_ms_encoded px_equalizer_ms_process_and_return(px_ms_equalizer* ms_equalizer, float input_left, float input_right);
 	static void px_equalizer_ms_initialize(px_ms_equalizer* ms_equalizer, float sample_rate);
 	static void px_equalizer_ms_add_band(px_ms_equalizer* ms_equalizer, float frequency, float quality, float gain, BIQUAD_FILTER_TYPE type);
 	static void px_equalizer_ms_remove_band(px_ms_equalizer* ms_equalizer, size_t index);
@@ -163,7 +164,22 @@ extern "C"
 		*input_left = decoded.left;
 		*input_right = decoded.right;
 	}
+	
+	static px_ms_encoded px_equalizer_ms_process_and_return(px_ms_equalizer* ms_equalizer, float input_left, float input_right)
+	{
+		assert(ms_equalizer);
+		px_ms_decoded decoded = { 0.f, 0.f };
 
+		decoded.left = input_left;
+		decoded.right = input_right;
+
+		px_ms_encoded encoded = px_ms_encode(decoded);
+
+		px_equalizer_mono_process(&ms_equalizer->mid, &encoded.mid);
+		px_equalizer_mono_process(&ms_equalizer->side, &encoded.side);
+
+		return encoded;
+	}
 
 	static void px_equalizer_mono_initialize(px_mono_equalizer* equalizer, float sample_rate)
 	{

@@ -56,8 +56,8 @@ typedef struct
 
 typedef struct
 {
-    px_mono_compressor mono;
-    px_mono_compressor stereo;
+    px_mono_compressor mid;
+    px_mono_compressor side;
     
     px_compressor_parameters parameters;
     px_ms_equalizer sidechain_equalizer;    
@@ -73,6 +73,10 @@ static void px_compressor_mono_destroy(px_mono_compressor* compressor);
 
 static px_stereo_compressor* px_compressor_stereo_create(float in_sample_rate);
 static void px_compressor_stereo_destroy(px_stereo_compressor* compressor);
+
+static px_ms_compressor* px_compressor_ms_create(float in_sample_rate);
+static void px_compressor_ms_destroy(px_ms_compressor* compressor);
+
 
 #ifdef PX_USE_GENERICS
 
@@ -161,6 +165,23 @@ static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* com
 static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* compressor, float in_gain, CHANNEL_FLAG channel);
 static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* compressor, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel);
 
+// ms
+
+static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_left, float* input_right);
+static void px_compressor_ms_initialize(px_ms_compressor* compressor, float in_sample_rate);
+
+static void px_compressor_ms_set_parameters(px_ms_compressor* compressor, px_compressor_parameters in_parameters);
+static void px_compressor_ms_set_threshold(px_ms_compressor* compressor, float in_threshold);
+static void px_compressor_ms_set_ratio(px_ms_compressor* compressor, float in_ratio);
+static void px_compressor_ms_set_knee(px_ms_compressor* compressor, float in_knee_width);
+static void px_compressor_ms_set_attack(px_ms_compressor* compressor, float in_attack);
+static void px_compressor_ms_set_release(px_ms_compressor* compressor, float in_release);
+static void px_compressor_ms_set_makeup_gain(px_ms_compressor* compressor, float in_gain);
+
+static void px_compressor_ms_set_sidechain_frequency(px_ms_compressor* compressor, float in_frequency, CHANNEL_FLAG channel);
+static void px_compressor_ms_set_sidechain_quality(px_ms_compressor* compressor, float in_quality, CHANNEL_FLAG channel);
+static void px_compressor_ms_set_sidechain_gain(px_ms_compressor* compressor, float in_gain, CHANNEL_FLAG channel);
+static void px_compressor_ms_set_sidechain_type(px_ms_compressor* compressor, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel);
 // ----------------------------------------------------------------------------------------------------------------------
 
 // inline functions 
@@ -177,9 +198,6 @@ static inline float px_compressor_compress(px_mono_compressor* compressor, float
 
 static px_mono_compressor* px_compressor_mono_create(float in_sample_rate)
 {
-    if (in_sample_rate < 40000.f) //test for validity probably a better way
-	return NULL;
-
     px_mono_compressor* compressor = (px_mono_compressor*)px_malloc(sizeof(px_mono_compressor));
     if (compressor)
 	px_compressor_mono_initialize(compressor, in_sample_rate);
@@ -190,14 +208,18 @@ static px_mono_compressor* px_compressor_mono_create(float in_sample_rate)
 
 static px_stereo_compressor* px_compressor_stereo_create(float in_sample_rate)
 {
-    if (in_sample_rate < 40000.f) //test for validity probably a better way
-	return NULL;
-
     px_stereo_compressor* compressor = (px_stereo_compressor*)px_malloc(sizeof(px_stereo_compressor));
     if (compressor)
 	px_compressor_stereo_initialize(compressor, in_sample_rate);
 	return compressor;
 
+}
+static px_ms_compressor* px_compressor_ms_create(float in_sample_rate)
+{
+    px_ms_compressor* compressor = (px_ms_compressor*)px_malloc(sizeof(px_ms_compressor));
+    if (compressor)
+	px_compressor_ms_initialize(compressor, in_sample_rate);
+        return compressor;
 }
 
 static void px_compressor_mono_destroy(px_mono_compressor* compressor)
@@ -207,6 +229,12 @@ static void px_compressor_mono_destroy(px_mono_compressor* compressor)
 }
 
 static void px_compressor_stereo_destroy(px_stereo_compressor* compressor)
+{
+    if (compressor)
+	px_free(compressor);
+}
+
+static void px_compressor_ms_destroy(px_ms_compressor* compressor)
 {
     if (compressor)
 	px_free(compressor);
@@ -243,7 +271,36 @@ static void px_compressor_stereo_process(px_stereo_compressor* compressor, float
 
 }
 
+static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_left, float* input_right)
+{
+    assert(compressor);
+    
+    float sidechain_left = *input_left;
+    float sidechain_right = *input_right;
 
+    px_ms_encoded encoded_sidechain = px_equalizer_ms_process_and_return(&compressor->sidechain_equalizer, sidechain_left, sidechain_right);
+   
+    float absolute_mid = fabsf(encoded_sidechain.mid);
+    float absolute_side = fabsf(encoded_sidechain.side);
+
+    float link = fabsf(fmaxf(absolute_mid, absolute_side));
+
+    px_ms_decoded decoded = { 0.f, 0.f };
+
+    decoded.left = *input_left;
+    decoded.right = *input_right;
+
+    px_ms_encoded encoded = px_ms_encode(decoded);
+
+    encoded.mid = px_compressor_compress(&compressor->mid, encoded.mid, link);
+    encoded.side = px_compressor_compress(&compressor->side, encoded.side, link);
+
+    decoded = px_ms_decode(encoded);
+
+    *input_left = decoded.left;
+    *input_right = decoded.right;
+
+}
 
 static void px_compressor_mono_initialize(px_mono_compressor* compressor, float in_sample_rate)
 {
@@ -286,6 +343,24 @@ static void px_compressor_stereo_initialize(px_stereo_compressor* compressor, fl
 
 }
 
+static void px_compressor_ms_initialize(px_ms_compressor* compressor, float in_sample_rate)
+{
+    assert(compressor);
+
+    px_ms_equalizer equalizer;
+    px_equalizer_ms_initialize(&equalizer, in_sample_rate);
+    px_equalizer_ms_add_band(&equalizer, 0.f, 1.f, 0.f, BIQUAD_HIGHPASS);
+    
+    compressor->sidechain_equalizer = equalizer;
+
+    px_compressor_parameters new_parameters = INITIALIZED_PARAMETERS;
+    compressor->parameters = new_parameters;
+
+    px_compressor_mono_initialize(&compressor->mid, in_sample_rate);
+    px_compressor_mono_initialize(&compressor->side, in_sample_rate);
+
+}
+
 static void px_compressor_mono_set_parameters(px_mono_compressor* compressor, px_compressor_parameters in_parameters)
 {
     assert(compressor);
@@ -300,6 +375,13 @@ static void px_compressor_stereo_set_parameters(px_stereo_compressor* compressor
     px_compressor_mono_set_parameters(&compressor->right, in_parameters);
 }
 
+static void px_compressor_ms_set_parameters(px_ms_compressor* compressor, px_compressor_parameters in_parameters)
+{
+    assert(compressor);
+    compressor->parameters = in_parameters;
+    px_compressor_mono_set_parameters(&compressor->mid, in_parameters);
+    px_compressor_mono_set_parameters(&compressor->side, in_parameters);
+}
 
 static void px_compressor_mono_set_threshold(px_mono_compressor* compressor, float in_threshold)
 {
@@ -313,6 +395,14 @@ static void px_compressor_stereo_set_threshold(px_stereo_compressor* compressor,
     compressor->parameters.threshold = in_threshold;
     px_compressor_mono_set_threshold(&compressor->left, in_threshold);
     px_compressor_mono_set_threshold(&compressor->right, in_threshold);
+}
+
+static void px_compressor_ms_set_threshold(px_ms_compressor* compressor, float in_threshold)
+{
+    assert(compressor);
+    compressor->parameters.threshold = in_threshold;
+    px_compressor_mono_set_threshold(&compressor->mid, in_threshold);
+    px_compressor_mono_set_threshold(&compressor->side, in_threshold);
 }
 
 static void px_compressor_mono_set_ratio(px_mono_compressor* compressor, float in_ratio)
@@ -329,6 +419,14 @@ static void px_compressor_stereo_set_ratio(px_stereo_compressor* compressor, flo
     px_compressor_mono_set_ratio(&compressor->right, in_ratio);
 }
 
+static void px_compressor_ms_set_ratio(px_ms_compressor* compressor, float in_ratio)
+{
+    assert(compressor);
+    compressor->parameters.ratio = in_ratio;
+    px_compressor_mono_set_ratio(&compressor->mid, in_ratio);
+    px_compressor_mono_set_ratio(&compressor->side, in_ratio);
+}
+
 static void px_compressor_mono_set_knee(px_mono_compressor* compressor, float in_knee_width)
 {
     assert(compressor);
@@ -341,6 +439,14 @@ static void px_compressor_stereo_set_knee(px_stereo_compressor* compressor, floa
     compressor->parameters.knee_width = in_knee_width;
     px_compressor_mono_set_knee(&compressor->left, in_knee_width);
     px_compressor_mono_set_knee(&compressor->right, in_knee_width);
+}
+
+static void px_compressor_ms_set_knee(px_ms_compressor* compressor, float in_knee_width)
+{
+    assert(compressor);
+    compressor->parameters.knee_width = in_knee_width;
+    px_compressor_mono_set_knee(&compressor->mid, in_knee_width);
+    px_compressor_mono_set_knee(&compressor->side, in_knee_width);
 }
 
 static void px_compressor_mono_set_attack(px_mono_compressor* compressor, float in_attack)
@@ -359,6 +465,13 @@ static void px_compressor_stereo_set_attack(px_stereo_compressor* compressor, fl
     px_compressor_mono_set_attack(&compressor->right, in_attack);
 }
 
+static void px_compressor_ms_set_attack(px_ms_compressor* compressor, float in_attack)
+{
+    assert(compressor);
+    compressor->parameters.attack = in_attack;
+    px_compressor_mono_set_attack(&compressor->mid, in_attack);
+    px_compressor_mono_set_attack(&compressor->side, in_attack);
+}
 
 static void px_compressor_mono_set_release(px_mono_compressor* compressor, float in_release)
 {
@@ -376,6 +489,14 @@ static void px_compressor_stereo_set_release(px_stereo_compressor* compressor, f
     px_compressor_mono_set_release(&compressor->right, in_release);
 }
 
+static void px_compressor_ms_set_release(px_ms_compressor* compressor, float in_release)
+{
+    assert(compressor);
+    compressor->parameters.release = in_release;
+    px_compressor_mono_set_release(&compressor->mid, in_release);
+    px_compressor_mono_set_release(&compressor->side, in_release);
+}
+
 static void px_compressor_mono_set_makeup_gain(px_mono_compressor* compressor, float in_gain)
 {
     assert(compressor);
@@ -388,6 +509,14 @@ static void px_compressor_stereo_set_makeup_gain(px_stereo_compressor* compresso
     compressor->parameters.makeup_gain = in_gain;
     px_compressor_mono_set_makeup_gain(&compressor->left, in_gain);
     px_compressor_mono_set_makeup_gain(&compressor->right, in_gain);
+}
+
+static void px_compressor_ms_set_makeup_gain(px_ms_compressor* compressor, float in_gain)
+{
+    assert(compressor);
+    compressor->parameters.makeup_gain = in_gain;
+    px_compressor_mono_set_makeup_gain(&compressor->mid, in_gain);
+    px_compressor_mono_set_makeup_gain(&compressor->side, in_gain);
 }
 
 // sidechain 
@@ -403,7 +532,13 @@ static void px_compressor_stereo_set_sidechain_frequency(px_stereo_compressor* c
     assert(compressor);
     px_equalizer_stereo_set_frequency(&compressor->sidechain_equalizer, 0, in_frequency, channel);
 }
- 
+
+static void px_compressor_ms_set_sidechain_frequency(px_ms_compressor* compressor, float in_frequency, CHANNEL_FLAG channel)
+{
+    assert(compressor);
+    px_equalizer_ms_set_frequency(&compressor->sidechain_equalizer, 0, in_frequency, channel);
+}
+
 static void px_compressor_mono_set_sidechain_quality(px_mono_compressor* compressor, float in_quality)
 {
     assert(compressor);
@@ -414,6 +549,12 @@ static void px_compressor_stereo_set_sidechain_quality(px_stereo_compressor* com
 {
     assert(compressor);
     px_equalizer_stereo_set_quality(&compressor->sidechain_equalizer, 0, in_quality, channel);
+}
+
+static void px_compressor_ms_set_sidechain_quality(px_ms_compressor* compressor, float in_quality, CHANNEL_FLAG channel)
+{
+    assert(compressor);
+    px_equalizer_ms_set_quality(&compressor->sidechain_equalizer, 0, in_quality, channel);
 }
 
 static void px_compressor_mono_set_sidechain_gain(px_mono_compressor* compressor, float in_gain)
@@ -428,6 +569,12 @@ static void px_compressor_stereo_set_sidechain_gain(px_stereo_compressor* compre
     px_equalizer_stereo_set_gain(&compressor->sidechain_equalizer, 0, in_gain, channel);
 }
 
+static void px_compressor_ms_set_sidechain_gain(px_ms_compressor* compressor, float in_gain, CHANNEL_FLAG channel)
+{
+    assert(compressor);
+    px_equalizer_ms_set_gain(&compressor->sidechain_equalizer, 0, in_gain, channel);
+}
+
 static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor, BIQUAD_FILTER_TYPE in_type)
 {
     assert(compressor);
@@ -439,6 +586,13 @@ static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* compre
     assert(compressor);
     px_equalizer_stereo_set_type(&compressor->sidechain_equalizer, 0, in_type, channel);
 }
+
+static void px_compressor_ms_set_sidechain_type(px_ms_compressor* compressor, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel)
+{
+    assert(compressor);
+    px_equalizer_ms_set_type(&compressor->sidechain_equalizer, 0, in_type, channel);
+}
+
 // ----------------------------------------------------------------------------------------------------------------------
 
 static inline void px_envelope_detector_calculate_coefficient(px_envelope_detector* envelope)
