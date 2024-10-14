@@ -1,4 +1,6 @@
 #include <math.h>
+#include <assert.h>
+#include <stdarg.h>
 
 #ifndef PX_GLOBALS_H
 #define PX_GLOBALS_H
@@ -56,5 +58,31 @@ static inline px_ms_decoded px_ms_decode(px_ms_encoded encoded)
 	return decoded;
 }
 
+// assert
+// ------------------------------------------------------------------------------------------------------
 
+#define PX_ASSERT_MONO_(x,y) px_assert_mono(x,y)
+#define PX_ASSERT_STEREO_(x,y,z) px_assert_stereo(x,y,z)
+#define GET_ASSERT_(_1,_2,_3,NAME,...) NAME
+
+#define px_assert(...) GET_ASSERT_(__VA_ARGS__, PX_ASSERT_STEREO_, PX_ASSERT_MONO_) (__VA_ARGS__)
+	
+static void px_assert_mono(void* control_pointer, float* value_pointer)
+{
+	// check if DSP object passed is NULL or uninitialized
+	assert(control_pointer);
+
+	// check if value is valid float pointer
+	assert(value_pointer);
+}
+
+static void px_assert_stereo(void* control_pointer, float* channel_one_pointer, float* channel_two_pointer)
+{
+	// check if DSP object passed is NULL or uninitialized
+	assert(control_pointer);
+
+	// check if value is valid float pointer
+	assert(channel_one_pointer);
+	assert(channel_two_pointer);
+}
 #endif 
