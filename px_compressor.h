@@ -5,9 +5,8 @@
 #include "px_equalizer.h"
 #include "px_memory.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef PX_COMPRESSOR_H
+#define PX_COMPRESSOR_H
 
 typedef struct
 {
@@ -688,6 +687,4 @@ static inline float px_compressor_compress(px_mono_compressor* compressor, float
 
 }	
 
-#ifdef __cplusplus
-}
 #endif

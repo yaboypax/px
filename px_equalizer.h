@@ -1,12 +1,10 @@
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 #include "px_biquad.h"
 #include "px_vector.h"
 #include "px_globals.h"
 
+#ifndef PX_EQUALIZER_H
+#define PX_EQUALIZER_H
 
 #define MAX_BANDS 24
 
@@ -469,6 +467,4 @@ extern "C"
 		}
 	}
 
-#ifdef __cplusplus
-}
 #endif

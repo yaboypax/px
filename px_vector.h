@@ -6,6 +6,8 @@
 
 #include "px_memory.h"
 
+#ifndef PX_VECTOR_H
+#define PX_VECTOR_H
 /* -------------------------------------------------------------------------
 
 
@@ -162,3 +164,4 @@ static void px_vector_resize(px_vector* vector, const size_t new_size)
     vector->size = new_size;
 }
 
+#endif

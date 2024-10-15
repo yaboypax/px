@@ -61,11 +61,7 @@ static inline px_ms_decoded px_ms_decode(px_ms_encoded encoded)
 // assert for process functions
 // ------------------------------------------------------------------------------------------------------
 
-#define PX_ASSERT_MONO_(x,y) px_assert_mono(x,y)
-#define PX_ASSERT_STEREO_(x,y,z) px_assert_stereo(x,y,z)
-#define GET_ASSERT_(_1,_2,_3,NAME,...) NAME
 
-#define px_assert(...) GET_ASSERT_(__VA_ARGS__, PX_ASSERT_STEREO_, PX_ASSERT_MONO_) (__VA_ARGS__)
 	
 static void px_assert_mono(void* control_pointer, float* value_pointer)
 {
@@ -85,4 +81,11 @@ static void px_assert_stereo(void* control_pointer, float* channel_one_pointer, 
 	assert(channel_one_pointer);
 	assert(channel_two_pointer);
 }
+
+#define EXPAND(x) x
+#define GET_ASSERT_MACRO(_1, _2, _3, NAME, ...) NAME
+
+#define px_assert(...) EXPAND(GET_ASSERT_MACRO(__VA_ARGS__, px_assert_stereo, px_assert_mono)(__VA_ARGS__))
+
+
 #endif 
