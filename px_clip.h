@@ -2,6 +2,10 @@
 #include <assert.h>
 #include "px_globals.h"
 
+#ifndef PX_CLIP_H
+#define PX_CLIP_H
+
+
 typedef enum
 {
     HARD,
@@ -136,5 +140,6 @@ static inline float arctangent_clip(float input)
 	return (2.0f / PI) * atan((1.6f * 0.6f) * input);
 }
 
+#endif
 
 

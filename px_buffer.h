@@ -6,6 +6,9 @@
 #include "px_vector.h"
 #include "px_memory.h"
 
+#ifndef PX_BUFFER_H
+#define PX_BUFFER_H
+
 /*
 
   Somewhat type generic (double/float) buffer for working with px_. Includes internal array of type generic (void*) px_vector.
@@ -208,4 +211,4 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
     }
 }
 
-
+#endif

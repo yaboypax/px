@@ -4,6 +4,10 @@
 #include "px_globals.h"
 #include "px_memory.h"
 
+
+#ifndef PX_SATURATOR_H
+#define PX_SATURATOR_H
+
 typedef enum
 {
     ARCTANGENT,
@@ -113,3 +117,5 @@ static inline float px_saturate_tangent(float input, float drive)
 {
     return tanh(input * dB2lin(drive));
 }
+
+#endif
