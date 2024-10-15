@@ -74,7 +74,7 @@ static void px_saturator_set_curve(px_saturator* saturator, SATURATION_CURVE cur
 
 static void px_saturator_mono_process(px_saturator* saturator, float* input)
 {
-    assert(saturator);
+    px_assert(saturator, input);
     switch (saturator->curve)
     {	
 	case ARCTANGENT:
@@ -89,7 +89,7 @@ static void px_saturator_mono_process(px_saturator* saturator, float* input)
 
 static void px_saturator_stereo_process(px_saturator* saturator, float* input_left, float* input_right)
 {
-    assert(saturator);
+    px_assert(saturator, input_left, input_right);
     switch (saturator->curve)
     {	
 	case ARCTANGENT:

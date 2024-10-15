@@ -58,7 +58,7 @@ static inline px_ms_decoded px_ms_decode(px_ms_encoded encoded)
 	return decoded;
 }
 
-// assert
+// assert for process functions
 // ------------------------------------------------------------------------------------------------------
 
 #define PX_ASSERT_MONO_(x,y) px_assert_mono(x,y)

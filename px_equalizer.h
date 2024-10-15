@@ -131,7 +131,7 @@ extern "C"
 
 	static void px_equalizer_mono_process(px_mono_equalizer* equalizer, float* input)
 	{
-		assert(equalizer);
+		px_assert(equalizer, input);
 		for (int i = 0; i < equalizer->num_bands; ++i)
 		{
 			px_biquad_process((px_biquad*)px_vector_get(&equalizer->filter_bank, i), input);
@@ -140,7 +140,7 @@ extern "C"
 
 	static void px_equalizer_stereo_process(px_stereo_equalizer* stereo_equalizer, float* input_left, float* input_right)
 	{
-		assert(stereo_equalizer);
+		px_assert(stereo_equalizer, input_left, input_right);
 		px_equalizer_mono_process(&stereo_equalizer->left, input_left);
 		px_equalizer_mono_process(&stereo_equalizer->right, input_right);
 
@@ -148,7 +148,7 @@ extern "C"
 
 	static void px_equalizer_ms_process(px_ms_equalizer* ms_equalizer, float* input_left, float* input_right)
 	{
-		assert(ms_equalizer);
+		px_assert(ms_equalizer, input_left, input_right);
 		px_ms_decoded decoded = { 0.f, 0.f };
 
 		decoded.left = *input_left;

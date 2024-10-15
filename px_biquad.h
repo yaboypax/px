@@ -79,7 +79,7 @@ static inline void px_biquad_update_coefficients(const px_biquad_parameters para
 
 static void px_biquad_process(px_biquad* biquad, float* input)
 {
-    assert(biquad);
+    px_assert(biquad, input);
     float mono = *input;
     *input = px_biquad_filter(biquad, mono);
 }

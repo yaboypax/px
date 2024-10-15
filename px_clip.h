@@ -59,7 +59,7 @@ static void px_clipper_set_type(px_clipper* clipper, CLIP_TYPE in_type)
 
 static void px_clipper_mono_process(px_clipper* clipper, float* input)
 {
-	assert(clipper);
+	px_assert(clipper, input);
 	printf("%d", clipper->type);
 	switch (clipper->type)
 	{
@@ -88,7 +88,7 @@ static void px_clipper_mono_process(px_clipper* clipper, float* input)
 
 static void px_clipper_stereo_process(px_clipper* clipper, float* input_left, float* input_right)
 {
-	assert(clipper);
+	px_assert(clipper, input_left, input_right);
 	printf("%d", clipper->type);
 	switch (clipper->type)
 	{

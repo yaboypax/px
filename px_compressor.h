@@ -243,7 +243,8 @@ static void px_compressor_ms_destroy(px_ms_compressor* compressor)
 static void px_compressor_mono_process(px_mono_compressor* compressor, float* input)
 {
     // check the caclulate_envelope function
-    assert(compressor);
+    px_assert(compressor, input);
+    
     //sidechain eq
     float sidechain = *input;
     px_equalizer_mono_process(&compressor->sidechain_equalizer, &sidechain);
@@ -252,7 +253,7 @@ static void px_compressor_mono_process(px_mono_compressor* compressor, float* in
 
 static void px_compressor_stereo_process(px_stereo_compressor* compressor, float* input_left, float* input_right)
 {
-    assert(compressor);
+    px_assert(compressor, input_left, input_right);
 
     //sidechain eq
     float sidechain_left = *input_left;
@@ -273,7 +274,7 @@ static void px_compressor_stereo_process(px_stereo_compressor* compressor, float
 
 static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_left, float* input_right)
 {
-    assert(compressor);
+    px_assert(compressor, input_left, input_right);
     
     float sidechain_left = *input_left;
     float sidechain_right = *input_right;
