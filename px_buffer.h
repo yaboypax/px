@@ -211,4 +211,65 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
     }
 }
 
+typedef struct {
+    float* const data;
+    int head;
+    int tail;
+    const int max_length;
+} px_circular_buffer;
+
+
+static void px_circular_push(px_circular_buffer* buffer, float value)
+{
+    int next;
+    next = buffer->head + 1;
+    if (next >= buffer->max_length)
+	next = 0;
+
+    if (next == buffer->tail)
+	return;
+
+    buffer->data[buffer->head] = value;
+    buffer->head = next;
+}
+
+static float px_circular_pop(px_circular_buffer* buffer)
+{
+    int next;
+
+    if (buffer->head == buffer->tail)
+	return;
+
+    next = buffer->tail + 1;
+    if (next >= buffer->max_length)
+	next = 0;
+
+    float value = buffer->data[buffer->tail];
+    buffer->tail = next;
+    
+    return value; 
+
+}
+
+static void px_circular_resize(px_circular_buffer* buffer, int new_size)
+{
+    float* new_data = px_malloc(sizeof(float) * new_size);
+    
+    int i = 0;
+    int j = buffer->head;
+
+    while (i < buffer->max_length) {
+	new_data[i] = buffer->data[j];
+	j = (j+1) % buffer->max_length;
+	i++;
+    }
+
+    free(buffer->data);
+    buffer->data = new_data;
+    buffer->head = 0;
+    buffer->tail = buffer->max_length-1;
+    buffer->max_length = new_size;
+
+}
+
 #endif
