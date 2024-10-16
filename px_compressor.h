@@ -148,7 +148,7 @@ static void px_compressor_mono_set_sidechain_type(px_mono_compressor* compressor
 
 // stereo
 
-static void px_compressor_stereo_process(px_stereo_compressor* compressor, float* input_left, float* input_right);
+static void px_compressor_stereo_process(px_stereo_compressor* compressor, float* input_left, float* input_right, bool dual_mono);
 static void px_compressor_stereo_initialize(px_stereo_compressor* compressor, float in_sample_rate);
 
 static void px_compressor_stereo_set_parameters(px_stereo_compressor* compressor, px_compressor_parameters in_parameters);
@@ -166,7 +166,7 @@ static void px_compressor_stereo_set_sidechain_type(px_stereo_compressor* compre
 
 // ms
 
-static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_left, float* input_right);
+static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_left, float* input_right, bool dual_mono);
 static void px_compressor_ms_initialize(px_ms_compressor* compressor, float in_sample_rate);
 
 static void px_compressor_ms_set_parameters(px_ms_compressor* compressor, px_compressor_parameters in_parameters);
@@ -250,7 +250,7 @@ static void px_compressor_mono_process(px_mono_compressor* compressor, float* in
     *input = px_compressor_compress(compressor, *input, sidechain);
 }
 
-static void px_compressor_stereo_process(px_stereo_compressor* compressor, float* input_left, float* input_right)
+static void px_compressor_stereo_process(px_stereo_compressor* compressor, float* input_left, float* input_right, bool dual_mono)
 {
     px_assert(compressor, input_left, input_right);
 
@@ -263,15 +263,22 @@ static void px_compressor_stereo_process(px_stereo_compressor* compressor, float
     float input_absolute_left = fabsf(sidechain_left);
     float input_absolute_right = fabsf(sidechain_right); /* put here: rms smoothing */
 
-   //mono sum
-   float input_link = fabsf(fmaxf(input_absolute_left, input_absolute_right));
-
-  *input_left = px_compressor_compress(&compressor->left, *input_left, input_link);
-  *input_right = px_compressor_compress(&compressor->right, *input_right, input_link);
-
+    //mono sum
+    float input_link = fabsf(fmaxf(input_absolute_left, input_absolute_right));
+   
+    if (dual_mono)
+    {
+	*input_left = px_compressor_compress(&compressor->left, *input_left, input_absolute_left);
+	*input_right = px_compressor_compress(&compressor->right, *input_right, input_absolute_right);
+    }
+    else
+    {
+    	*input_left = px_compressor_compress(&compressor->left, *input_left, input_link);
+    	*input_right = px_compressor_compress(&compressor->right, *input_right, input_link);
+    }
 }
 
-static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_left, float* input_right)
+static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_left, float* input_right, bool dual_mono)
 {
     px_assert(compressor, input_left, input_right);
     
@@ -292,8 +299,16 @@ static void px_compressor_ms_process(px_ms_compressor* compressor, float* input_
 
     px_ms_encoded encoded = px_ms_encode(decoded);
 
-    encoded.mid = px_compressor_compress(&compressor->mid, encoded.mid, link);
-    encoded.side = px_compressor_compress(&compressor->side, encoded.side, link);
+    if (dual_mono)
+    {
+	encoded.mid = px_compressor_compress(&compressor->mid, encoded.mid, absolute_mid);
+	encoded.side = px_compressor_compress(&compressor->side, encoded.side, absolute_side);
+    }
+    else
+    {
+    	encoded.mid = px_compressor_compress(&compressor->mid, encoded.mid, link);
+    	encoded.side = px_compressor_compress(&compressor->side, encoded.side, link);
+    }
 
     decoded = px_ms_decode(encoded);
 
