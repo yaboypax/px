@@ -8,6 +8,42 @@
 #ifndef PX_COMPRESSOR_H
 #define PX_COMPRESSOR_H
 
+
+/*
+ 
+	px_compressor 
+
+		mono, stereo, or mid-side VCA-style compressor with built-in sidechain equalizer and dual_mono process mode
+	
+	px_compressor_parameters (float)
+		
+		threshold, ratio, knee width, makeup gain, attack and release
+	
+
+	init:
+		stack initialize:
+			px_mono_compressor compressor;
+			px_compressor_mono_initialize(&compressor, sample_rate);
+		heap:
+			px_mono_compressor* compressor = px_compressor_mono_create(sample_rate);
+			// initialize called within create();
+			
+			px_mono_compressor_destroy(compressor);
+			// don't forget to free
+	use:
+
+		// pointer to compressor and pointer to buffer float
+		px_compressor_mono_process(&compressor, &input) 
+
+		// boolean flag for dual mono processing for stereo and mid-side
+		px_compressor_stereo_process(&stereo_compressor, &input_left, &input_right, true) // dual_mono
+		px_compressor_ms_process(&ms_compressor, &inpur_left, input_right, false)         // not dual mono
+		
+		REMEMBER: mid-side encoding done within px_ms_compressor_process() function
+*/
+
+
+
 typedef struct
 {
     float sample_rate;
