@@ -579,14 +579,14 @@ typedef struct
 
 } px_delay_line;
 
-/*
+
 typedef struct
 {
     px_mono_delay left;
     px_mono_delay right;
     px_delay_parameters parameters;
 } px_stereo_delay;
-*/
+
 
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time)
 {
