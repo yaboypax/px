@@ -175,7 +175,7 @@ static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int samp
         printf("OUT OF BUFFER RANGE");
         return 0.f;
     }
-    BUFFER_TYPE* ptr = buffer->vector[channel].data[sample_position];
+    BUFFER_TYPE* ptr = (BUFFER_TYPE*)buffer->vector[channel].data[sample_position];
     return *ptr;
 }
 
@@ -187,7 +187,7 @@ static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sa
         return NULL;
     }
     
-    BUFFER_TYPE* ptr = buffer->vector[channel].data[sample_position];
+    BUFFER_TYPE* ptr = (BUFFER_TYPE*)buffer->vector[channel].data[sample_position];
     
     if (ptr)
 	return ptr;
@@ -204,7 +204,7 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
     {
         for (int i = 0; i < buffer->num_samples; ++i)
         {
-            BUFFER_TYPE* ptr = buffer->vector[channel].data[i];
+            BUFFER_TYPE* ptr = (float*)buffer->vector[channel].data[i];
 	    *ptr *= in_gain;
 	    buffer->vector[channel].data[i] = ptr;
         }
@@ -212,48 +212,55 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
 }
 
 typedef struct {
-    float* const data;
+    float* data;
     int head;
     int tail;
-    const int max_length;
+    int max_length;
 } px_circular_buffer;
 
 
 static void px_circular_push(px_circular_buffer* buffer, float value)
 {
-    int next;
-    next = buffer->head + 1;
+    int next = buffer->head + 1;
     if (next >= buffer->max_length)
-	next = 0;
+        next = 0;
 
     if (next == buffer->tail)
-	return;
+        return; // Buffer is full
 
-    buffer->data[buffer->head] = value;
+    buffer->data[next] = value;
     buffer->head = next;
 }
 
 static float px_circular_pop(px_circular_buffer* buffer)
 {
-    int next;
-
-    if (buffer->head == buffer->tail)
-	return;
-
-    next = buffer->tail + 1;
-    if (next >= buffer->max_length)
-	next = 0;
+    assert(buffer->head != buffer->tail); // Buffer is not empty
 
     float value = buffer->data[buffer->tail];
-    buffer->tail = next;
-    
-    return value; 
+    int next = buffer->tail + 1;
+    if (next >= buffer->max_length)
+        next = 0;
 
+    buffer->tail = next;
+    return value;
 }
 
+static float px_circular_get_sample(px_circular_buffer* buffer, size_t index)
+{
+    assert(index >= 0 && index < buffer->max_length);
+    return buffer->data[index];
+}
+
+static void px_circular_initialize(px_circular_buffer* buffer, int max_length)
+{
+    buffer->data = (float*)px_malloc(sizeof(float) * max_length);
+    buffer->head = 0;
+    buffer->tail = max_length-1;
+    buffer->max_length = max_length;
+}
 static void px_circular_resize(px_circular_buffer* buffer, int new_size)
 {
-    float* new_data = px_malloc(sizeof(float) * new_size);
+    float* new_data = (float*)px_malloc(sizeof(float) * new_size);
     
     int i = 0;
     int j = buffer->head;
@@ -264,7 +271,7 @@ static void px_circular_resize(px_circular_buffer* buffer, int new_size)
 	i++;
     }
 
-    free(buffer->data);
+    px_free(buffer->data);
     buffer->data = new_data;
     buffer->head = 0;
     buffer->tail = buffer->max_length-1;
