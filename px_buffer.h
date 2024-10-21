@@ -221,14 +221,13 @@ typedef struct {
 
 static void px_circular_push(px_circular_buffer* buffer, float value)
 {
-    int next = buffer->head + 1;
-    if (next >= buffer->max_length)
-        next = 0;
+    int next = (buffer->head + 1) % buffer->max_length;
 
     if (next == buffer->tail)
-        return; // Buffer is full
+        buffer->tail = (buffer->tail + 1) % buffer->max_length;
 
-    buffer->data[next] = value;
+
+    buffer->data[buffer->head] = value;
     buffer->head = next;
 }
 
@@ -248,14 +247,14 @@ static float px_circular_pop(px_circular_buffer* buffer)
 static float px_circular_get_sample(px_circular_buffer* buffer, size_t index)
 {
     assert(index >= 0 && index < buffer->max_length);
-    return buffer->data[index];
+    return buffer->data[index % buffer->max_length];
 }
 
 static void px_circular_initialize(px_circular_buffer* buffer, int max_length)
 {
     buffer->data = (float*)px_malloc(sizeof(float) * max_length);
     buffer->head = 0;
-    buffer->tail = max_length-1;
+    buffer->tail = 0;
     buffer->max_length = max_length;
 }
 static void px_circular_resize(px_circular_buffer* buffer, int new_size)

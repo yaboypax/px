@@ -26,8 +26,8 @@ typedef struct
 
 typedef struct
 {
-    px_mono_delay left;
-    px_mono_delay right;
+    px_delay_line left;
+    px_delay_line right;
     px_delay_parameters parameters;
 } px_stereo_delay;
 
