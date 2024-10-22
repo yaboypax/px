@@ -87,25 +87,12 @@ static void px_delay_mono_process(px_delay_line* delay, float* input)
     float delayed_interp = delayed1 + delay->parameters.time.fraction * (delayed2 - delayed1);
     
     float feedback = (*input) + (delay->parameters.feedback * delayed_interp);
-    px_circular_push(&delay->buffer, feedback);    // feedback
+    px_circular_push(&delay->buffer, feedback);
 
     float output = ((1.0f - delay->parameters.dry_wet) * (*input)) + (delay->parameters.dry_wet * delayed_interp);
 
   
     *input = output;
 }
-/*
-static inline float px_delay(px_buffer* buffer, float x, float feedback)
-{
-    for (int channel = 0; i < buffer->num_channels; ++i)
-    {
-    	for (int i = 0; i < buffer->num_samples; ++i)
-    	{
-    	    float y = px_buffer_get_sample(buffer, channel, i);
-	    float d = x + feedback * y;
-    	}
-    }
-}
-*/
 
 #endif
