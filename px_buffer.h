@@ -252,7 +252,11 @@ static float px_circular_get_sample(px_circular_buffer* buffer, size_t index)
 
 static void px_circular_initialize(px_circular_buffer* buffer, int max_length)
 {
+    assert(max_length > 0);
+
     buffer->data = (float*)px_malloc(sizeof(float) * max_length);
+    memset(buffer->data, 0, sizeof(float) * max_length);
+
     buffer->head = 0;
     buffer->tail = 0;
     buffer->max_length = max_length;
