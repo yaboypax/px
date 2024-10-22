@@ -75,7 +75,7 @@ static void px_delay_mono_process(px_delay_line* delay, float* input)
 {
     px_assert(delay, input);
 
-    px_circular_push(&delay->buffer, *input);
+    //px_circular_push(&delay->buffer, *input);
 
     int read1 = (delay->buffer.head - delay->parameters.time.whole + delay->buffer.max_length) % delay->buffer.max_length;
     int read2 = (read1 + 1) % delay->buffer.max_length;
