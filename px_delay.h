@@ -1,9 +1,9 @@
-#ifndef PX_DELAY_H
-#define PX_DELAY_H
-
-#define PX_FLOAT_BUFFER 1
 #include "px_globals.h"
 #include "px_buffer.h"
+
+#ifndef PX_DELAY_H
+#define PX_DELAY_H
+#define PX_FLOAT_BUFFER 1
 
 typedef struct
 {
