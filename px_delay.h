@@ -1,4 +1,3 @@
-
 #ifndef PX_DELAY_H
 #define PX_DELAY_H
 
@@ -75,13 +74,11 @@ static void px_delay_mono_process(px_delay_line* delay, float* input)
 {
     px_assert(delay, input);
 
-    //px_circular_push(&delay->buffer, *input);
-
     int read1 = (delay->buffer.head - delay->parameters.time.whole + delay->buffer.max_length) % delay->buffer.max_length;
     int read2 = (read1 + 1) % delay->buffer.max_length;
 
-    float delayed1 = px_circular_get_sample(&delay->buffer, (size_t)read1);
-    float delayed2 = px_circular_get_sample(&delay->buffer, (size_t)read2);
+    float delayed1 = px_circular_get_sample(&delay->buffer, (size_t) read1);
+    float delayed2 = px_circular_get_sample(&delay->buffer, (size_t) read2);
     
     // linear interpolation
     float delayed_interp = delayed1 + delay->parameters.time.fraction * (delayed2 - delayed1);
@@ -90,8 +87,6 @@ static void px_delay_mono_process(px_delay_line* delay, float* input)
     px_circular_push(&delay->buffer, feedback);
 
     float output = ((1.0f - delay->parameters.dry_wet) * (*input)) + (delay->parameters.dry_wet * delayed_interp);
-
-  
     *input = output;
 }
 

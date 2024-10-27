@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <assert.h>
-
+#include "px_globals.h"
 #include "px_equalizer.h"
 #include "px_memory.h"
 

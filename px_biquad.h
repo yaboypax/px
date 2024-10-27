@@ -1,3 +1,5 @@
+#include "px_globals.h"
+
 #ifndef PX_BIQUAD_H
 #define PX_BIQUAD_H
 
@@ -68,14 +70,6 @@ static inline float px_biquad_filter(px_biquad* biquad, float input);
 static inline void px_biquad_update_coefficients(const px_biquad_parameters parameters, px_biquad_coefficients* coefficients);
 
 // ---------------------------------------------------------------------------------------
-
-#include <stdio.h>
-#include <math.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <stdlib.h>
-#include "px_globals.h"
-
 
 static void px_biquad_process(px_biquad* biquad, float* input)
 {

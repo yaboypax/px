@@ -1,6 +1,12 @@
-#include <math.h>
-#include <assert.h>
 #include <stdarg.h>
+#include <math.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
+
+
 
 #ifndef PX_GLOBALS_H
 #define PX_GLOBALS_H

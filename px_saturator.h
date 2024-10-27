@@ -1,6 +1,3 @@
-#include <math.h>
-#include <assert.h>
-
 #include "px_globals.h"
 #include "px_memory.h"
 

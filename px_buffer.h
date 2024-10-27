@@ -1,8 +1,4 @@
-#include <math.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <stdio.h>
-
+#include "px_globals.h"
 #include "px_vector.h"
 #include "px_memory.h"
 

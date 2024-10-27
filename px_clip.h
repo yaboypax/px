@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include <assert.h>
 #include "px_globals.h"
 
 #ifndef PX_CLIP_H

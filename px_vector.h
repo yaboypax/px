@@ -1,9 +1,4 @@
-#include <math.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <string.h>
-
+#include "px_globals.h"
 #include "px_memory.h"
 
 #ifndef PX_VECTOR_H

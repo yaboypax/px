@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #ifndef PX_MEMORY_H
 #define PX_MEMORY_H
 
