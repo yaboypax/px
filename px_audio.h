@@ -584,6 +584,12 @@ typedef struct
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time)
 {
    assert(delay);
+   
+   if (delay->parameters.max_time = max_time)
+   {
+		px_delay_mono_prepare(delay, sample_rate);
+		return;
+   }
 
    delay_time time = { 1.f, 0.f, 1 };
    px_delay_parameters parameters = {  sample_rate, 0.5f, time, max_time, 0.5f };
@@ -593,6 +599,14 @@ static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, fl
    px_circular_initialize(&delay->buffer, max_samples);
 }
 
+static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate)
+{
+	assert(delay)
+	
+	delay->parameters.sample_rate = sample_rate;
+	int max_samples = sample_rate * delay->parameters.max_time;
+	px_circular_initialize(&delay->buffer, max_samples);
+}
 static void px_delay_mono_set_time(px_delay_line* delay, float time)
 {
    assert(delay);
