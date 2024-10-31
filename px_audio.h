@@ -601,7 +601,7 @@ static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, fl
 
 static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate)
 {
-	assert(delay)
+    assert(delay);
 	
 	delay->parameters.sample_rate = sample_rate;
 	int max_samples = sample_rate * delay->parameters.max_time;
