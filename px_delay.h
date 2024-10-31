@@ -38,6 +38,11 @@ typedef struct
     px_delay_parameters parameters;
 } px_stereo_delay;
 
+static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time);
+static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate);
+static void px_delay_mono_set_time(px_delay_line* delay, float time);
+static void px_delay_mono_set_feedback(px_delay_line* delay, float feedback);
+static void px_delay_mono_process(px_delay_line* delay, float* input);
 
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time)
 {
