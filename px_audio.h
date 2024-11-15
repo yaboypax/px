@@ -590,7 +590,7 @@ static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, fl
 {
    assert(delay);
    
-   if (delay->parameters.max_time = max_time)
+   if (delay->parameters.max_time == max_time)
    {
 		px_delay_mono_prepare(delay, sample_rate);
 		return;

@@ -8,15 +8,6 @@
 
 #define MAX_BANDS 24
 
-	typedef enum
-	{
-		BOTH = 0,
-		LEFT,
-		RIGHT,
-		MID,
-		SIDE
-	} CHANNEL_FLAG;
-
 	typedef struct px_mono_equalizer
 	{
 		px_vector filter_bank;  // type-generic vector filled with px_mono_biquad filters

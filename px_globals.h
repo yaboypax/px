@@ -35,6 +35,17 @@ static inline float dB2lin(float dB) {
 // Mid Side
 //
 //
+
+	typedef enum
+	{
+		BOTH = 0,
+		LEFT,
+		RIGHT,
+		MID,
+		SIDE
+	} CHANNEL_FLAG;
+
+
 typedef struct
 {
     float left;

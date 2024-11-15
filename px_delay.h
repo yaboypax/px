@@ -35,7 +35,6 @@ typedef struct
 {
     px_delay_line left;
     px_delay_line right;
-    px_delay_parameters parameters;
 } px_stereo_delay;
 
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time);
@@ -44,11 +43,18 @@ static void px_delay_mono_set_time(px_delay_line* delay, float time);
 static void px_delay_mono_set_feedback(px_delay_line* delay, float feedback);
 static void px_delay_mono_process(px_delay_line* delay, float* input);
 
+static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate, float max_time);
+static void px_delay_stereo_prepare(px_stereo_delay* delay, float sample_rate);
+static void px_delay_stereo_set_time(px_stereo_delay* delay, float time, CHANNEL_FLAG channel);
+static void px_delay_stereo_set_feedback(px_stereo_delay* delay, float feedback, CHANNEL_FLAG channel);
+static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, float* input_right);
+
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time)
 {
    assert(delay);
-   
-   if (delay->parameters.max_time = max_time)
+  
+   // TODO REMOVE THIS 
+   if (delay->parameters.max_time == max_time)
    {
 		px_delay_mono_prepare(delay, sample_rate);
 		return;
@@ -62,6 +68,21 @@ static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, fl
    px_circular_initialize(&delay->buffer, max_samples);
 }
 
+static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate, float max_time)
+{
+	assert(delay);
+
+	delay_time time = {1.f, 0.f, 1 };
+	px_delay_parameters = parameters { sample_rate, 0.5f, time, max_time, 0.5f };
+	
+	delay->left.parameters = parameters;
+	delay->right.parameters = parameters;
+
+	int max_samples = sample_rate * max_time;
+	px_circular_initialize(delay->left.buffer, max_samples);
+	px_circular_initialize(delay->right.buffer, max_samples);	
+}
+
 static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate)
 {
     assert(delay);
@@ -70,6 +91,21 @@ static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate)
 	int max_samples = sample_rate * delay->parameters.max_time;
 	px_circular_initialize(&delay->buffer, max_samples);
 }
+
+static void px_delay_stereo_prepare(px_stereo_delay* delay, float sample_rate)
+{
+	assert(delay);
+	
+	delay->parameters.sample_rate = sample_rate;
+	
+	//error with initialization
+	assert(delay->left.parameters.max_time == delay->right.parameters.max_time);
+	int max_samples = sample_rate * delay->left.parameters.max_time;
+
+	px_circular_initialize(&delay->left.buffer, max_samples);
+	px_circular_initialize(&delay->right.buffer, max_samples);
+}
+
 static void px_delay_mono_set_time(px_delay_line* delay, float time)
 {
    assert(delay);
@@ -81,12 +117,58 @@ static void px_delay_mono_set_time(px_delay_line* delay, float time)
    delay->parameters.time.fraction = time_in_samples - delay->parameters.time.whole;
 }
 
+static void px_delay_stereo_set_time(px_stereo_delay* delay, float time, CHANNEL_FLAG channel)
+{
+	assert(delay);
+	assert(time>0 && time < delay->parameters.max_time);
+	switch (channel)
+	{
+			case BOTH:
+			{
+				px_delay_mono_set_time(delay->left.parameters.time = time;
+				px_delay_mono_set_time(delay->right.parameters.time = time;
+			}
+			case LEFT:
+			{
+				px_delay_mono_set_time(delay->left.parameters.time = time;
+			}	
+			case RIGHT:
+			{
+				px_delay_mono_set_time(&delay->right.parameters.time = time;
+			}
+	}	
+
+}
+
 static void px_delay_mono_set_feedback(px_delay_line* delay, float feedback)
 {
    assert(delay);
    assert(feedback < 1.01f);
 
    delay->parameters.feedback = feedback;
+}
+
+static void px_delay_stereo_set_feedback(px_stereo_delay* delay, float feedback, CHANNEL_FLAG channel)
+{
+	assert(delay);
+	assert(feedback < 1.01f);
+
+	switch (channel)
+	{
+			case BOTH:
+			{
+				px_delay_mono_set_feedback(delay->left.parameters.feedback = feedback);
+				px_delay_mono_set_feedback(delay->right.parameters.feedback = feedback);
+			}
+			case LEFT:
+			{
+				px_delay_mono_set_feedback(delay->left.parameters.feedback = feedback);
+			}	
+			case RIGHT:
+			{
+				px_delay_mono_set_feedback(&delay->right.parameters.feedback = feedback);
+			}
+	
 }
 
 static void px_delay_mono_process(px_delay_line* delay, float* input)
@@ -107,6 +189,15 @@ static void px_delay_mono_process(px_delay_line* delay, float* input)
 
     float output = ((1.0f - delay->parameters.dry_wet) * (*input)) + (delay->parameters.dry_wet * delayed_interp);
     *input = output;
+}
+
+static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, float* input_right)
+{
+	px_assert(delay, input_left, input_right);
+
+	px_delay_mono_process(&delay->left, input_left);
+	px_delay_mono_process(&delay->right, input_right);
+
 }
 
 #endif
