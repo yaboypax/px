@@ -3,7 +3,6 @@
 
 #ifndef PX_DELAY_H
 #define PX_DELAY_H
-#define PX_FLOAT_BUFFER 1
 
 typedef struct
 {
@@ -73,14 +72,14 @@ static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate
 	assert(delay);
 
 	delay_time time = {1.f, 0.f, 1 };
-	px_delay_parameters = parameters { sample_rate, 0.5f, time, max_time, 0.5f };
+	px_delay_parameters parameters = { sample_rate, 0.5f, time, max_time, 0.5f };
 	
 	delay->left.parameters = parameters;
 	delay->right.parameters = parameters;
 
 	int max_samples = sample_rate * max_time;
-	px_circular_initialize(delay->left.buffer, max_samples);
-	px_circular_initialize(delay->right.buffer, max_samples);	
+	px_circular_initialize(&delay->left.buffer, max_samples);
+	px_circular_initialize(&delay->right.buffer, max_samples);	
 }
 
 static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate)
@@ -96,8 +95,9 @@ static void px_delay_stereo_prepare(px_stereo_delay* delay, float sample_rate)
 {
 	assert(delay);
 	
-	delay->parameters.sample_rate = sample_rate;
-	
+	delay->left.parameters.sample_rate = sample_rate;
+	delay->right.parameters.sample_rate = sample_rate;
+
 	//error with initialization
 	assert(delay->left.parameters.max_time == delay->right.parameters.max_time);
 	int max_samples = sample_rate * delay->left.parameters.max_time;
@@ -120,21 +120,21 @@ static void px_delay_mono_set_time(px_delay_line* delay, float time)
 static void px_delay_stereo_set_time(px_stereo_delay* delay, float time, CHANNEL_FLAG channel)
 {
 	assert(delay);
-	assert(time>0 && time < delay->parameters.max_time);
+	assert(time>0 && time < delay->left.parameters.max_time);
 	switch (channel)
 	{
 			case BOTH:
 			{
-				px_delay_mono_set_time(delay->left.parameters.time = time;
-				px_delay_mono_set_time(delay->right.parameters.time = time;
+				px_delay_mono_set_time(&delay->left, time);
+				px_delay_mono_set_time(&delay->right, time);
 			}
 			case LEFT:
 			{
-				px_delay_mono_set_time(delay->left.parameters.time = time;
+				px_delay_mono_set_time(&delay->left, time);
 			}	
 			case RIGHT:
 			{
-				px_delay_mono_set_time(&delay->right.parameters.time = time;
+				px_delay_mono_set_time(&delay->right, time);
 			}
 	}	
 
@@ -157,18 +157,18 @@ static void px_delay_stereo_set_feedback(px_stereo_delay* delay, float feedback,
 	{
 			case BOTH:
 			{
-				px_delay_mono_set_feedback(delay->left.parameters.feedback = feedback);
-				px_delay_mono_set_feedback(delay->right.parameters.feedback = feedback);
+				px_delay_mono_set_feedback(&delay->left, feedback);
+				px_delay_mono_set_feedback(&delay->right, feedback);
 			}
 			case LEFT:
 			{
-				px_delay_mono_set_feedback(delay->left.parameters.feedback = feedback);
+				px_delay_mono_set_feedback(&delay->left, feedback);
 			}	
 			case RIGHT:
 			{
-				px_delay_mono_set_feedback(&delay->right.parameters.feedback = feedback);
+				px_delay_mono_set_feedback(&delay->right, feedback);
 			}
-	
+	}	
 }
 
 static void px_delay_mono_process(px_delay_line* delay, float* input)
