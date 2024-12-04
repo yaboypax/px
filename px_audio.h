@@ -762,11 +762,13 @@ static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, f
 
 		float delayed_interp_left = delayed_left1 + delay->left.parameters.time.fraction * (delayed_left2 - delayed_left1);
 		float delayed_interp_right = delayed_right1 + delay->right.parameters.time.fraction * (delayed_right2 - delayed_right1);
-		float feedback_left = (*input_left) + (delay->left.parameters.feedback * delayed_interp_left);
-		float feedback_right = (*input_right) + (delay->right.parameters.feedback * delayed_interp_right);
 
-		px_circular_push(&delay->left.buffer, feedback_right); // cross feedback
-		px_circular_push(&delay->right.buffer, feedback_left);
+    	float feedback_left = (*input_left) + (delay->left.parameters.feedback * delayed_interp_right); // Right feedback to left
+    	float feedback_right = (*input_right) + (delay->right.parameters.feedback * delayed_interp_left); // Left feedback to right
+
+    	// Push feedback into respective buffers
+    	px_circular_push(&delay->left.buffer, feedback_left);
+    	px_circular_push(&delay->right.buffer, feedback_right);
 
 		*input_left = ((1.0f - delay->left.parameters.dry_wet) * (*input_left)) + (delay->left.parameters.dry_wet * delayed_interp_left);
 		*input_right = ((1.0f - delay->right.parameters.dry_wet) * (*input_right)) + (delay->right.parameters.dry_wet * delayed_interp_right);
