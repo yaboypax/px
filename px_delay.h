@@ -69,7 +69,10 @@ static px_delay_line* px_create_mono_delay(float sample_rate, float max_time)
 static void px_destroy_mono_delay(px_delay_line* delay)
 {
 	if (delay)
+	{
+		px_free(delay->buffer.data);
 		px_free(delay);
+	}
 }
 
 static px_stereo_delay* px_create_stereo_delay(float sample_rate, float max_time, bool ping_pong)
@@ -81,10 +84,14 @@ static px_stereo_delay* px_create_stereo_delay(float sample_rate, float max_time
 	return delay;
 }
 
-static void px_destroy_mono_delay(px_delay_line* delay)
+static void px_destroy_stereo_delay(px_stereo_delay* delay)
 {
 	if (delay)
+	{
+		px_free(delay->left.buffer.data);
+		px_free(delay->right.buffer.data);
 		px_free(delay);
+	}
 }
 
 
