@@ -629,7 +629,7 @@ static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate
 	delay_time time = {1.f, 0.f, 1 };
 	px_delay_parameters parameters = { sample_rate, 0.5f, time, max_time, 0.5f };
 	
-	delay->ping_pong = ping_pong
+	delay->ping_pong = ping_pong;
 	delay->left.parameters = parameters;
 	delay->right.parameters = parameters;
 
