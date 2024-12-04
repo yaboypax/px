@@ -585,6 +585,7 @@ typedef struct
 
 typedef struct
 {
+	bool ping_pong;
     px_delay_line left;
     px_delay_line right;
 } px_stereo_delay;
@@ -595,11 +596,12 @@ static void px_delay_mono_set_time(px_delay_line* delay, float time);
 static void px_delay_mono_set_feedback(px_delay_line* delay, float feedback);
 static void px_delay_mono_process(px_delay_line* delay, float* input);
 
-static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate, float max_time);
+static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate, float max_time, bool ping_pong);
 static void px_delay_stereo_prepare(px_stereo_delay* delay, float sample_rate);
 static void px_delay_stereo_set_time(px_stereo_delay* delay, float time, CHANNEL_FLAG channel);
 static void px_delay_stereo_set_feedback(px_stereo_delay* delay, float feedback, CHANNEL_FLAG channel);
-static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, float* input_right, bool ping_pong);
+static void px_delay_stereo_set_ping_pong(px_stereo_delay* delay, bool ping_pong);
+static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, float* input_right);
 
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time)
 {
@@ -620,13 +622,14 @@ static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, fl
    px_circular_initialize(&delay->buffer, max_samples);
 }
 
-static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate, float max_time)
+static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate, float max_time, bool ping_pong)
 {
 	assert(delay);
 
 	delay_time time = {1.f, 0.f, 1 };
 	px_delay_parameters parameters = { sample_rate, 0.5f, time, max_time, 0.5f };
 	
+	delay->ping_pong = ping_pong
 	delay->left.parameters = parameters;
 	delay->right.parameters = parameters;
 
@@ -724,6 +727,12 @@ static void px_delay_stereo_set_feedback(px_stereo_delay* delay, float feedback,
 	}	
 }
 
+static void px_delay_stereo_set_ping_pong(px_stereo_delay* delay, bool ping_pong)
+{
+	assert(delay);
+	delay->ping_pong = ping_pong;
+}
+
 static void px_delay_mono_process(px_delay_line* delay, float* input)
 {
     px_assert(delay, input);
@@ -744,14 +753,14 @@ static void px_delay_mono_process(px_delay_line* delay, float* input)
     *input = output;
 }
 
-static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, float* input_right, bool ping_pong)
+static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, float* input_right)
 {
 	px_assert(delay, input_left, input_right);
 	
-	if (ping_pong)
+	if (delay->ping_pong)
 	{
-		int read_left1 = (delay->left.buffer.head - delay->left.parameters.time.whole + delay->left.buffer.max_length) % delay->left.buffer.max_length;
-		int read_right1 = (delay->right.buffer.head - delay->right.parameters.time.whole + delay->right.buffer.max_length) % delay->right.buffer.max_length;
+        int read_left1 = (delay->left.buffer.head - delay->left.parameters.time.whole + delay->left.buffer.max_length) % delay->left.buffer.max_length;
+        int read_right1 = (delay->right.buffer.head - (delay->right.parameters.time.whole + (delay->left.parameters.time.whole / 2)) + delay->right.buffer.max_length) % 
 		int read_left2 = (read_left1 + 1) % delay->left.buffer.max_length;
 		int read_right2 = (read_right1 + 1) % delay->right.buffer.max_length;
 
