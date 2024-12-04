@@ -760,7 +760,7 @@ static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, f
 	if (delay->ping_pong)
 	{
         int read_left1 = (delay->left.buffer.head - delay->left.parameters.time.whole + delay->left.buffer.max_length) % delay->left.buffer.max_length;
-        int read_right1 = (delay->right.buffer.head - (delay->right.parameters.time.whole + (delay->left.parameters.time.whole / 2)) + delay->right.buffer.max_length) % 
+        int read_right1 = (delay->right.buffer.head - (delay->right.parameters.time.whole + (delay->left.parameters.time.whole / 2)) + delay->right.buffer.max_length) % delay->left.buffer.max_length; 
 		int read_left2 = (read_left1 + 1) % delay->left.buffer.max_length;
 		int read_right2 = (read_right1 + 1) % delay->right.buffer.max_length;
 
