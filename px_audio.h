@@ -590,11 +590,19 @@ typedef struct
     px_delay_line right;
 } px_stereo_delay;
 
+static px_delay_line* px_create_mono_delay(float sample_rate, float max_time);
+static void px_destroy_mono_delay(px_delay_line* delay);
+static void px_delay_mono_free_buffer(px_delay_line* delay);
+
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time);
 static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate);
 static void px_delay_mono_set_time(px_delay_line* delay, float time);
 static void px_delay_mono_set_feedback(px_delay_line* delay, float feedback);
 static void px_delay_mono_process(px_delay_line* delay, float* input);
+
+static px_stereo_delay* px_create_stereo_delay(float sample_rate, float max_time, bool ping_pong);
+static void px_destroy_stereo_delay(px_stereo_delay* delay);
+static void px_delay_stereo_free_buffer(px_stereo_delay* delay);
 
 static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate, float max_time, bool ping_pong);
 static void px_delay_stereo_prepare(px_stereo_delay* delay, float sample_rate);
@@ -602,6 +610,45 @@ static void px_delay_stereo_set_time(px_stereo_delay* delay, float time, CHANNEL
 static void px_delay_stereo_set_feedback(px_stereo_delay* delay, float feedback, CHANNEL_FLAG channel);
 static void px_delay_stereo_set_ping_pong(px_stereo_delay* delay, bool ping_pong);
 static void px_delay_stereo_process(px_stereo_delay* delay, float* input_left, float* input_right);
+
+
+static px_delay_line* px_create_mono_delay(float sample_rate, float max_time)
+{
+	px_delay_line* delay = (px_delay_line*) px_malloc(sizeof(px_delay_line));
+	assert(delay);
+
+	px_delay_mono_initialize(delay, sample_rate, max_time);
+	return delay;
+}
+
+static void px_destroy_mono_delay(px_delay_line* delay)
+{
+	if (delay)
+	{
+		px_free(delay->buffer.data);
+		px_free(delay);
+	}
+}
+
+static px_stereo_delay* px_create_stereo_delay(float sample_rate, float max_time, bool ping_pong)
+{
+	px_stereo_delay* delay = (px_stereo_delay*) px_malloc(sizeof(px_stereo_delay));
+	assert(delay);
+
+	px_delay_stereo_initialize(delay, sample_rate, max_time, ping_pong);
+	return delay;
+}
+
+static void px_destroy_stereo_delay(px_stereo_delay* delay)
+{
+	if (delay)
+	{
+		px_free(delay->left.buffer.data);
+		px_free(delay->right.buffer.data);
+		px_free(delay);
+	}
+}
+
 
 static void px_delay_mono_initialize(px_delay_line* delay, float sample_rate, float max_time)
 {
@@ -638,6 +685,23 @@ static void px_delay_stereo_initialize(px_stereo_delay* delay, float sample_rate
 	px_circular_initialize(&delay->right.buffer, max_samples);	
 }
 
+static void px_delay_mono_free_buffer(px_delay_line* delay)
+{
+	if (delay)
+	{
+		px_free(delay->buffer.data);
+	}
+}
+
+static void px_delay_stereo_free_buffer(px_stereo_delay* delay)
+{
+	if (delay)
+	{
+		px_free(delay->left.buffer.data);
+		px_free(delay->right.buffer.data);
+	}
+}
+				
 static void px_delay_mono_prepare(px_delay_line* delay, float sample_rate)
 {
     assert(delay);
