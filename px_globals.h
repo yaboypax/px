@@ -104,5 +104,8 @@ static void px_assert_stereo(void* control_pointer, float* channel_one_pointer, 
 
 #define px_assert(...) EXPAND(GET_ASSERT_MACRO(__VA_ARGS__, px_assert_stereo, px_assert_mono)(__VA_ARGS__))
 
+#define px_map(value, inputMin, inputMax, outputMin, outputMax) \
+		      ((inputMin) == (inputMax) ? (outputMin) : 		\
+			  ((outputMin) + ((outputMax) - (outputMin)) * (((value) - (inputMin)) / ((inputMax) - (inputMin)))))
 
 #endif 
