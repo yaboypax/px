@@ -382,6 +382,7 @@ typedef struct
 static px_buffer* px_buffer_create(int num_samples, int num_channels);
 static void px_buffer_destroy(px_buffer* buffer);
 static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_channels);
+static void px_buffer_clear(px_buffer* buffer);
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value);
 static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int sample_position);
@@ -432,20 +433,18 @@ static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_cha
     for (int channel = 0; channel < num_channels; ++channel)
     {
         px_vector_initialize(&buffer->vector[channel]);
-	buffer->vector[channel].data = (void**)px_malloc(num_samples * sizeof(BUFFER_TYPE*));
+		buffer->vector[channel].data = px_malloc(num_samples * sizeof(BUFFER_TYPE));
     }
 }
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value)
 {
-    if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
+    if ( channel >= buffer->num_channels || sample_position >= buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
         return;
     }
-
-    BUFFER_TYPE* ptr = &value;
-    buffer->vector[channel].data[sample_position] = ptr;
+    ((BUFFER_TYPE*)buffer->vector[channel].data)[sample_position] = value;
 
 }
 
@@ -456,8 +455,8 @@ static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int samp
         printf("OUT OF BUFFER RANGE");
         return 0.f;
     }
-    BUFFER_TYPE* ptr = (BUFFER_TYPE*)buffer->vector[channel].data[sample_position];
-    return *ptr;
+	
+	return ((BUFFER_TYPE*)buffer->vector[channel].data)[sample_position];
 }
 
 static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sample_position)
