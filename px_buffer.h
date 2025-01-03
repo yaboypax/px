@@ -121,10 +121,10 @@ static px_buffer* px_buffer_create(int num_samples, int num_channels)
     return buffer;
 }
 
-static void px_buffer_destroy(px_buffer* buffer)
+static void px_buffer_clear(px_buffer* buffer)
 {
-    if (buffer)
-    {
+	if (buffer)
+	{
         for (int channel = 0; channel < buffer->num_channels; ++channel)
         {
             if (buffer->vector[channel].data)
@@ -133,6 +133,14 @@ static void px_buffer_destroy(px_buffer* buffer)
                 buffer->vector[channel].data = NULL;
             }
         }
+	}
+}
+
+static void px_buffer_destroy(px_buffer* buffer)
+{
+    if (buffer)
+    {
+		px_buffer_clear(buffer);
         px_free(buffer);
     }
 }
