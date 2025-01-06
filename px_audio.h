@@ -395,7 +395,7 @@ static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sa
 
 static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain);
 static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src); 
-{
+
 // --------------------------------------------------------------------------------------------------------
 
 static px_buffer* px_buffer_create(int num_channels, int num_samples)
