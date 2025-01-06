@@ -83,20 +83,20 @@
 	#define MAX_CHANNELS 4
 #endif
 
-typedef struct 
-{
-    int num_samples;
-    int num_channels;
-
-    px_vector vector[MAX_CHANNELS];
-    bool is_filled;
-} px_buffer;
-
 #ifdef PX_FLOAT_BUFFER
 	#define BUFFER_TYPE float
 #elif PX_DOUBLE_BUFFER
 	#define BUFFER_TYPE double
 #endif
+
+typedef struct 
+{
+    int num_samples;
+    int num_channels;
+
+    BUFFER_TYPE* data[MAX_CHANNELS];
+    bool is_filled;
+} px_buffer;
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -128,10 +128,9 @@ static void px_buffer_clear(px_buffer* buffer)
 	{
         for (int channel = 0; channel < buffer->num_channels; ++channel)
         {
-            if (buffer->vector[channel].data)
+            if (buffer->data[channel])
             {
-                px_free(buffer->vector[channel].data);
-                buffer->vector[channel].data = NULL;
+                px_free(buffer->data[channel]);
             }
         }
 	}
@@ -141,7 +140,10 @@ static void px_buffer_destroy(px_buffer* buffer)
 {
     if (buffer)
     {
-		px_buffer_clear(buffer);
+		for (int channel =0; channel < buffer->num_channels; ++channel)
+		{
+			px_free(buffer->data[channel]);
+		}
         px_free(buffer);
     }
 }
@@ -152,22 +154,23 @@ static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_cha
     
     buffer->num_samples = num_samples;
     buffer->num_channels = num_channels;
-
+	buffer->is_filled = false;
     for (int channel = 0; channel < num_channels; ++channel)
     {
-        px_vector_initialize(&buffer->vector[channel]);
-		buffer->vector[channel].data = px_malloc(num_samples * sizeof(BUFFER_TYPE));
-    }
+        buffer->data[channel] = (BUFFER_TYPE*)px_malloc(num_samples * sizeof(BUFFER_TYPE));
+    	assert(buffer->data[channel]);
+	}
 }
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value)
 {
+	assert(buffer);
     if ( channel >= buffer->num_channels || sample_position >= buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
         return;
     }
-    ((BUFFER_TYPE*)buffer->vector[channel].data)[sample_position] = value;
+    buffer->data[channel][sample_position] = value;
 
 }
 
@@ -179,12 +182,13 @@ static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int samp
         return 0.f;
     }
 	
-	return ((BUFFER_TYPE*)buffer->vector[channel].data)[sample_position];
+	return buffer->data[channel][sample_position];
 }
 
 static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sample_position)
 {
-    if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
+    /*
+		if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
         return NULL;
@@ -196,11 +200,12 @@ static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sa
 	return ptr;
     else
 	return NULL;
+	*/
 }
 
 static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
 {
-
+	/*
     assert(buffer);
 
     for (int channel = 0; channel < buffer->num_channels; ++channel)
@@ -211,7 +216,7 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
 	    *ptr *= in_gain;
 	    buffer->vector[channel].data[i] = ptr;
         }
-    }
+    }*/
 }
 
 typedef struct {
