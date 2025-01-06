@@ -124,11 +124,10 @@ static void px_assert_stereo(void* control_pointer, float* channel_one_pointer, 
 #endif
 #ifndef PX_VECTOR_H
 #define PX_VECTOR_H
-
 /* -------------------------------------------------------------------------
 
-    px_vector
-    type generic vector of pointers
+
+    type generic vector
 
 
    -------------------------------------------------------------------------*/
@@ -136,11 +135,8 @@ static void px_assert_stereo(void* control_pointer, float* channel_one_pointer, 
 typedef struct {
     size_t size;
     size_t capacity;
-    void* data;
-    size_t value_size;
+    void** data;
 } px_vector;
-
-#define px_vector(type) { 0, 0, NULL, sizeof(type)}
 
 static px_vector* px_vector_create();
 static void px_vector_initialize(px_vector* vector);
@@ -189,58 +185,62 @@ static void px_vector_push(px_vector* vector, void* value)
     if (vector->size == vector->capacity) 
     {
         size_t new_capacity = (vector->capacity == 0) ? 1 : vector->capacity * 2;
-        void* new_data = realloc(vector->data, vector->value_size * new_capacity);
+        void** new_data = (void**)realloc(vector->data, sizeof(void*) * new_capacity);
         if (new_data)
-	    {
+	{
             vector->data = new_data;
             vector->capacity = new_capacity;
         }
     }
 
-    void* target = (char*)vector->data + (vector->size * vector->value_size);
-    memcpy(target, value, vector->value_size);
+    vector->data[vector->size] = value;
     vector->size++;
 }
 
-// static void px_vector_pop(px_vector* vector)
-// {
-//     assert(vector);
-//     if (vector->size > 0)
-//     {
-//         vector->size--;
-//         vector->data[vector->size] = NULL;
-//     }
-// }
+static void px_vector_pop(px_vector* vector)
+{
+    assert(vector);
+    if (vector->size > 0)
+    {
+        vector->size--;
+        vector->data[vector->size] = NULL;
+    }
+}
 
 static void* px_vector_get(px_vector* vector, size_t index)
 {
     assert(vector);
-
-    if (index >= vector->size)
+    void* ptr;
+    
+    if (index < vector->size)
     {
-        printf("OUT OF RANGE\n");
-        return NULL;
+        ptr = vector->data[index];
     }
-
-    return (char*)vector->data + (index * vector->value_size);
+    else
+    {
+	printf("OUT OF RANGE");
+        ptr = NULL;	
+    }
+    
+    return ptr;
 }
 
 static void px_vector_remove(px_vector* vector , size_t index)
 {
     assert(vector);
-
-    if (index >= vector->size)
+    if (index < vector->size)
     {
-        printf("OUT OF RANGE\n");
-        return;
+	vector->data[index] = NULL;
+	for (size_t i = index; i < (vector->size - 1); ++i)
+    	{
+	    vector->data[i] = vector->data[i+1];
+	}
+	vector->size--;
     }
-
-    void* target = (char*)vector->data + (index * vector->value_size);
-    void* next = (char*)target + vector->value_size;
-    size_t move_size = (vector->size - index - 1) * vector->value_size;
-
-    memmove(target, next, move_size);
-    vector->size--;
+    else
+    {
+	printf("OUT OF RANGE");
+    }    
 
 }
 
@@ -261,14 +261,17 @@ static void px_vector_copy(px_vector* dest_vector, px_vector* source_vector)
 
 static void px_vector_resize(px_vector* vector, const size_t new_size)
 {
-        assert(vector);
+    if (!vector)
+        return;
+    if (new_size == vector->size)
+        return;
 
     if (new_size > vector->capacity)
     {
-        size_t new_capacity = new_size;
-        void* new_data = realloc(vector->data, new_capacity * vector->value_size);
+        size_t new_capacity = new_size * 2;
+        void** new_data = (void**)realloc(vector->data, sizeof(void*) * new_capacity);
         if (new_data)
-        {
+	{
             vector->data = new_data;
             vector->capacity = new_capacity;
         }
@@ -357,20 +360,20 @@ static void px_vector_resize(px_vector* vector, const size_t new_size)
 	#define MAX_CHANNELS 4
 #endif
 
-typedef struct 
-{
-    int num_samples;
-    int num_channels;
-
-    px_vector vector[MAX_CHANNELS];
-    bool is_filled;
-} px_buffer;
-
 #ifdef PX_FLOAT_BUFFER
 	#define BUFFER_TYPE float
 #elif PX_DOUBLE_BUFFER
 	#define BUFFER_TYPE double
 #endif
+
+typedef struct 
+{
+    int num_samples;
+    int num_channels;
+
+    BUFFER_TYPE* data[MAX_CHANNELS];
+    bool is_filled;
+} px_buffer;
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -402,10 +405,9 @@ static void px_buffer_clear(px_buffer* buffer)
 	{
         for (int channel = 0; channel < buffer->num_channels; ++channel)
         {
-            if (buffer->vector[channel].data)
+            if (buffer->data[channel])
             {
-                px_free(buffer->vector[channel].data);
-                buffer->vector[channel].data = NULL;
+                px_free(buffer->data[channel]);
             }
         }
 	}
@@ -415,7 +417,10 @@ static void px_buffer_destroy(px_buffer* buffer)
 {
     if (buffer)
     {
-		px_buffer_clear(buffer);
+		for (int channel =0; channel < buffer->num_channels; ++channel)
+		{
+			px_free(buffer->data[channel]);
+		}
         px_free(buffer);
     }
 }
@@ -426,22 +431,23 @@ static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_cha
     
     buffer->num_samples = num_samples;
     buffer->num_channels = num_channels;
-
+	buffer->is_filled = false;
     for (int channel = 0; channel < num_channels; ++channel)
     {
-        buffer->vector[channel] = px_vector(BUFFER_TYPE);
-        px_vector_resize(&buffer->vector[channel], (size_t)num_samples);
-    }
+        buffer->data[channel] = (BUFFER_TYPE*)px_malloc(num_samples * sizeof(BUFFER_TYPE));
+    	assert(buffer->data[channel]);
+	}
 }
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value)
 {
+	assert(buffer);
     if ( channel >= buffer->num_channels || sample_position >= buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
         return;
     }
-    ((BUFFER_TYPE*)buffer->vector[channel].data)[sample_position] = value;
+    buffer->data[channel][sample_position] = value;
 
 }
 
@@ -450,45 +456,44 @@ static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int samp
     if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
-        return(BUFFER_TYPE)0;
+        return 0.f;
     }
 	
-	BUFFER_TYPE* sample = (BUFFER_TYPE*) px_vector_get(&buffer->vector[channel], (size_t)sample_position );    
-    if (sample)
-        return *sample;
-    else return (BUFFER_TYPE)0;
+	return buffer->data[channel][sample_position];
 }
 
 static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sample_position)
 {
-    // if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
-    // {
-    //     printf("OUT OF BUFFER RANGE");
-    //     return NULL;
-    // }
+    /*
+		if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
+    {
+        printf("OUT OF BUFFER RANGE");
+        return NULL;
+    }
     
-    // BUFFER_TYPE* ptr = (BUFFER_TYPE*)&buffer->vector[channel].data[sample_position];
+    BUFFER_TYPE* ptr = (BUFFER_TYPE*)buffer->vector[channel].data[sample_position];
     
-    // if (ptr)
-	//     return ptr;
-    // else
-	//     return NULL;
+    if (ptr)
+	return ptr;
+    else
+	return NULL;
+	*/
 }
 
 static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
 {
+	/*
+    assert(buffer);
 
-    // assert(buffer);
-
-    // for (int channel = 0; channel < buffer->num_channels; ++channel)
-    // {
-    //     for (int i = 0; i < buffer->num_samples; ++i)
-    //     {
-    //         BUFFER_TYPE* ptr = (float*)buffer->vector[channel].data[i];
-	//     *ptr *= in_gain;
-	//     buffer->vector[channel].data[i] = ptr;
-    //     }
-    // }
+    for (int channel = 0; channel < buffer->num_channels; ++channel)
+    {
+        for (int i = 0; i < buffer->num_samples; ++i)
+        {
+            BUFFER_TYPE* ptr = (float*)buffer->vector[channel].data[i];
+	    *ptr *= in_gain;
+	    buffer->vector[channel].data[i] = ptr;
+        }
+    }*/
 }
 
 typedef struct {
