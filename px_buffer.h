@@ -102,9 +102,9 @@ typedef struct
 // --------------------------------------------------------------------------------------------------------
 
 
-static px_buffer* px_buffer_create(int num_samples, int num_channels);
+static px_buffer* px_buffer_create(int num_channels, int num_samples);
 static void px_buffer_destroy(px_buffer* buffer);
-static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_channels);
+static void px_buffer_initialize(px_buffer* buffer, int num_channels, int num_samples);
 static void px_buffer_clear(px_buffer* buffer);
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value);
@@ -115,7 +115,7 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain);
 
 // --------------------------------------------------------------------------------------------------------
 
-static px_buffer* px_buffer_create(int num_samples, int num_channels)
+static px_buffer* px_buffer_create(int num_channels, int num_samples)
 {
     px_buffer* buffer = (px_buffer*)px_malloc(sizeof(px_buffer));
     px_buffer_initialize(buffer, num_samples, num_channels);
@@ -148,7 +148,7 @@ static void px_buffer_destroy(px_buffer* buffer)
     }
 }
 
-static void px_buffer_initialize(px_buffer* buffer, int num_samples, int num_channels)
+static void px_buffer_initialize(px_buffer* buffer, int num_channels, int num_samples)
 {
     assert(buffer);
     
@@ -171,15 +171,22 @@ static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_posi
         return;
     }
     buffer->data[channel][sample_position] = value;
-
+	
+	if (!buffer->is_filled)
+		buffer->is_filled = true;
 }
 
 static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int sample_position)
 {
+	if (!buffer->is_filled)
+	{
+		printf("BUFFER EMPTY");
+		return (BUFFER_TYPE)0;
+	}
     if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
     {
         printf("OUT OF BUFFER RANGE");
-        return 0.f;
+        return (BUFFER_TYPE)0;
     }
 	
 	return buffer->data[channel][sample_position];
