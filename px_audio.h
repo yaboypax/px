@@ -375,10 +375,15 @@ typedef struct
     bool is_filled;
 } px_buffer;
 
+typedef struct
+{
+	int num_samples;
+	int num_channels;
+	BUFFER_TYPE* data;
+	bool is_filled;
+} px_interleaved_buffer;
 
 // --------------------------------------------------------------------------------------------------------
-
-
 static px_buffer* px_buffer_create(int num_channels, int num_samples);
 static void px_buffer_destroy(px_buffer* buffer);
 static void px_buffer_initialize(px_buffer* buffer, int num_channels, int num_samples);
@@ -389,7 +394,8 @@ static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int samp
 static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sample_position);
 
 static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain);
-
+static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src); 
+{
 // --------------------------------------------------------------------------------------------------------
 
 static px_buffer* px_buffer_create(int num_channels, int num_samples)
@@ -502,6 +508,38 @@ static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
         }
     }*/
 }
+
+
+static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src) 
+{
+	px_interleaved_buffer* interleaved_buffer = (px_interleaved_buffer*)malloc(sizeof(px_interleaved_buffer));
+	if (!interleaved_buffer) return NULL;
+	
+	interleaved_buffer->num_samples = src->num_samples;
+    interleaved_buffer->num_channels = src->num_channels;
+    interleaved_buffer->is_filled = src->is_filled;
+	
+	size_t total_samples = src->num_samples * src->num_channels;
+	interleaved_buffer->data = (BUFFER_TYPE*)malloc(total_samples * sizeof(BUFFER_TYPE));
+	if (!interleaved_buffer->data)
+	{
+		free(interleaved_buffer);
+		return NULL;
+	}
+
+	for (int sample = 0; sample < src->num_samples; ++sample) {
+		for (int channel = 0; channel < src->num_channels; ++channel) {
+			int interleaved_index = sample * src->num_channels + channel;
+			interleaved_buffer->data[interleaved_index] = src->data[channel][sample];
+        }
+    }
+
+	return interleaved_buffer;
+
+}
+
+
+
 
 typedef struct {
     float* data;
