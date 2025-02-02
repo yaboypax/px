@@ -190,19 +190,23 @@ static void px_delay_stereo_set_time(px_stereo_delay* delay, float time, CHANNEL
 	assert(time>0 && time < delay->left.parameters.max_time);
 	switch (channel)
 	{
-			case BOTH:
-			{
-				px_delay_mono_set_time(&delay->left, time);
-				px_delay_mono_set_time(&delay->right, time);
-			}
-			case LEFT:
-			{
-				px_delay_mono_set_time(&delay->left, time);
-			}	
-			case RIGHT:
-			{
-				px_delay_mono_set_time(&delay->right, time);
-			}
+		case BOTH:	{
+			px_delay_mono_set_time(&delay->left, time);
+			px_delay_mono_set_time(&delay->right, time);
+			break;
+		}
+		case LEFT:	{
+			px_delay_mono_set_time(&delay->left, time);
+			break;
+		}	
+		case RIGHT: {
+			px_delay_mono_set_time(&delay->right, time);
+			break;
+		}
+		default: {
+			printf("Invalid Channel Flag");
+			break;
+		}
 	}	
 
 }
@@ -222,19 +226,23 @@ static void px_delay_stereo_set_feedback(px_stereo_delay* delay, float feedback,
 
 	switch (channel)
 	{
-			case BOTH:
-			{
-				px_delay_mono_set_feedback(&delay->left, feedback);
-				px_delay_mono_set_feedback(&delay->right, feedback);
-			}
-			case LEFT:
-			{
-				px_delay_mono_set_feedback(&delay->left, feedback);
-			}	
-			case RIGHT:
-			{
-				px_delay_mono_set_feedback(&delay->right, feedback);
-			}
+		case BOTH: {
+			px_delay_mono_set_feedback(&delay->left, feedback);
+			px_delay_mono_set_feedback(&delay->right, feedback);
+			break;
+		}
+		case LEFT: {
+			px_delay_mono_set_feedback(&delay->left, feedback);
+			break;
+		}	
+		case RIGHT:	{
+			px_delay_mono_set_feedback(&delay->right, feedback);
+			break;
+		}
+		default: {
+			printf("Invalid Channel Flag");
+			break;
+		}
 	}	
 }
 
