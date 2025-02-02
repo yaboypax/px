@@ -261,20 +261,23 @@
 	static void px_equalizer_stereo_set_frequency(px_stereo_equalizer* stereo_equalizer, size_t index, float in_frequency, CHANNEL_FLAG channel)
 	{
 		assert(stereo_equalizer);
-		switch (channel)
-		{
-		case BOTH:
-		{
+		switch (channel) {
+		case BOTH: {
 			px_equalizer_mono_set_frequency(&stereo_equalizer->left, index, in_frequency);
 			px_equalizer_mono_set_frequency(&stereo_equalizer->right, index, in_frequency);
+			break;
 		}
-		case LEFT:
-		{
+		case LEFT: {
 			px_equalizer_mono_set_frequency(&stereo_equalizer->left, index, in_frequency);
+			break;
 		}
-		case RIGHT:
-		{
+		case RIGHT: {
 			px_equalizer_mono_set_frequency(&stereo_equalizer->right, index, in_frequency);
+			break;
+		}
+		default:{
+			printf("Invalid Channel Flag");
+			break;
 		}
 		}
 	}
@@ -282,20 +285,23 @@
 	static void px_equalizer_ms_set_frequency(px_ms_equalizer* ms_equalizer, size_t index, float in_frequency, CHANNEL_FLAG channel)
 	{
 		assert(ms_equalizer);
-		switch (channel)
-		{
-		case BOTH:
-		{
+		switch (channel){
+		case BOTH:{
 			px_equalizer_mono_set_frequency(&ms_equalizer->mid, index, in_frequency);
 			px_equalizer_mono_set_frequency(&ms_equalizer->side, index, in_frequency);
+			break;
 		}
-		case LEFT:
-		{
+		case LEFT:{
 			px_equalizer_mono_set_frequency(&ms_equalizer->mid, index, in_frequency);
+			break;
 		}
-		case RIGHT:
-		{
+		case RIGHT:	{
 			px_equalizer_mono_set_frequency(&ms_equalizer->side, index, in_frequency);
+			break;
+		}
+		default: {
+			printf("Invalid Channel Flag");
+			break;
 		}
 		}
 	}
@@ -314,20 +320,23 @@
 	static void px_equalizer_stereo_set_quality(px_stereo_equalizer* stereo_equalizer, size_t index, float in_quality, CHANNEL_FLAG channel)
 	{
 		assert(stereo_equalizer);
-		switch (channel)
-		{
-		case BOTH:
-		{
+		switch (channel) {
+		case BOTH: {
 			px_equalizer_mono_set_quality(&stereo_equalizer->left, index, in_quality);
 			px_equalizer_mono_set_quality(&stereo_equalizer->right, index, in_quality);
+			break;
 		}
-		case LEFT:
-		{
+		case LEFT:{
 			px_equalizer_mono_set_quality(&stereo_equalizer->left, index, in_quality);
+			break;
 		}
-		case RIGHT:
-		{
+		case RIGHT: {
 			px_equalizer_mono_set_quality(&stereo_equalizer->right, index, in_quality);
+			break;
+		}
+		default: {
+			printf("Invalid Channel Flag");
+			break;
 		}
 		}
 	}
@@ -335,20 +344,23 @@
 	static void px_equalizer_ms_set_quality(px_ms_equalizer* ms_equalizer, size_t index, float in_quality, CHANNEL_FLAG channel)
 	{
 		assert(ms_equalizer);
-		switch (channel)
-		{
-		case BOTH:
-		{
+		switch (channel) {
+		case BOTH: {
 			px_equalizer_mono_set_quality(&ms_equalizer->mid, index, in_quality);
 			px_equalizer_mono_set_quality(&ms_equalizer->side, index, in_quality);
+			break;
 		}
-		case MID:
-		{
+		case MID: {
 			px_equalizer_mono_set_quality(&ms_equalizer->mid, index, in_quality);
+			break;
 		}
-		case SIDE:
-		{
+		case SIDE: {
 			px_equalizer_mono_set_quality(&ms_equalizer->side, index, in_quality);
+			break;
+		}
+		default: {
+			printf("Invalid Channel Flag");
+			break;
 		}
 		}
 	}
@@ -367,20 +379,23 @@
 	static void px_equalizer_stereo_set_gain(px_stereo_equalizer* stereo_equalizer, size_t index, float in_gain, CHANNEL_FLAG channel)
 	{
 		assert(stereo_equalizer);
-		switch (channel)
-		{
-		case BOTH:
-		{
+		switch (channel) {
+		case BOTH: {
 			px_equalizer_mono_set_gain(&stereo_equalizer->left, index, in_gain);
 			px_equalizer_mono_set_gain(&stereo_equalizer->right, index, in_gain);
+			break;	
 		}
-		case LEFT:
-		{
+		case LEFT: {
 			px_equalizer_mono_set_gain(&stereo_equalizer->left, index, in_gain);
+			break;
 		}
-		case RIGHT:
-		{
+		case RIGHT:	{
 			px_equalizer_mono_set_gain(&stereo_equalizer->right, index, in_gain);
+			break;
+		}
+		default: {
+			printf("Invalid Channel Flag");
+			break;
 		}
 		}
 	}
@@ -388,23 +403,28 @@
 	static void px_equalizer_ms_set_gain(px_ms_equalizer* ms_equalizer, size_t index, float in_gain, CHANNEL_FLAG channel)
 	{
 		assert(ms_equalizer);
+		
 		switch (channel)
 		{
-		case BOTH:
-		{
-			px_equalizer_mono_set_gain(&ms_equalizer->mid, index, in_gain);
-			px_equalizer_mono_set_gain(&ms_equalizer->side, index, in_gain);
-		}
-		case MID:
-		{
-			px_equalizer_mono_set_gain(&ms_equalizer->mid, index, in_gain);
-		}
-		case SIDE:
-		{
-			px_equalizer_mono_set_gain(&ms_equalizer->side, index, in_gain);
-		}
-		}
+    	case BOTH: {
+        	px_equalizer_mono_set_gain(&ms_equalizer->mid,  index, in_gain);
+        	px_equalizer_mono_set_gain(&ms_equalizer->side, index, in_gain);
+        	break;
+    	}
+    	case MID:{
+        	px_equalizer_mono_set_gain(&ms_equalizer->mid,  index, in_gain);
+        	break;
+    	}
+    	case SIDE:{
+        	px_equalizer_mono_set_gain(&ms_equalizer->side, index, in_gain);
+        	break;
+    	}
+    	default:{
+        	printf("Invalid Channel Flag");
+        	break;
+    	}
 	}
+}
 
 	static void px_equalizer_mono_set_type(px_mono_equalizer* equalizer, size_t index, BIQUAD_FILTER_TYPE in_type)
 	{
@@ -419,21 +439,24 @@
 	static void px_equalizer_stereo_set_type(px_stereo_equalizer* stereo_equalizer, size_t index, BIQUAD_FILTER_TYPE in_type, CHANNEL_FLAG channel)
 	{
 		assert(stereo_equalizer);
-		switch (channel)
-		{
-		case BOTH:
-		{
+		switch (channel) {
+		case BOTH: {
 			px_equalizer_mono_set_type(&stereo_equalizer->left, index, in_type);
 			px_equalizer_mono_set_type(&stereo_equalizer->right, index, in_type);
+			break;
 		}
-		case LEFT:
-		{
+		case LEFT: {
 			px_equalizer_mono_set_type(&stereo_equalizer->left, index, in_type);
+			break;
 		}
-		case RIGHT:
-		{
+		case RIGHT:	{
 			px_equalizer_mono_set_type(&stereo_equalizer->right, index, in_type);
+			break;
 		}
+		default: {
+        	printf("Invalid Channel Flag");
+        	break;
+    	}
 		}
 	}
 
@@ -442,19 +465,23 @@
 		assert(ms_equalizer);
 		switch (channel)
 		{
-		case BOTH:
-		{
+		case BOTH:{
 			px_equalizer_mono_set_type(&ms_equalizer->mid, index, in_type);
 			px_equalizer_mono_set_type(&ms_equalizer->side, index, in_type);
+			break;
 		}
-		case MID:
-		{
+		case MID:{
 			px_equalizer_mono_set_type(&ms_equalizer->mid, index, in_type);
+			break;
 		}
-		case SIDE:
-		{
+		case SIDE:{
 			px_equalizer_mono_set_type(&ms_equalizer->side, index, in_type);
+			break;
 		}
+		default: {
+        	printf("Invalid Channel Flag");
+        	break;
+    	}
 		}
 	}
 
