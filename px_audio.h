@@ -391,9 +391,8 @@ static void px_buffer_clear(px_buffer* buffer);
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value);
 static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int sample_position);
-static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sample_position);
+static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel);
 
-static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain);
 static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src); 
 
 // --------------------------------------------------------------------------------------------------------
@@ -475,40 +474,18 @@ static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int samp
 	return buffer->data[channel][sample_position];
 }
 
-static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel, int sample_position)
+static BUFFER_TYPE* px_buffer_get_write_pointer(px_buffer* buffer, int channel)
 {
-    /*
-		if ( channel > buffer->num_channels || sample_position > buffer->num_samples)
+
+	if ( channel > buffer->num_channels)
     {
         printf("OUT OF BUFFER RANGE");
         return NULL;
     }
     
-    BUFFER_TYPE* ptr = (BUFFER_TYPE*)buffer->vector[channel].data[sample_position];
-    
-    if (ptr)
-	return ptr;
-    else
-	return NULL;
-	*/
+    return buffer->data[channel];
+   
 }
-
-static void px_buffer_gain(px_buffer* buffer, BUFFER_TYPE in_gain)
-{
-	/*
-    assert(buffer);
-
-    for (int channel = 0; channel < buffer->num_channels; ++channel)
-    {
-        for (int i = 0; i < buffer->num_samples; ++i)
-        {
-            BUFFER_TYPE* ptr = (float*)buffer->vector[channel].data[i];
-	    *ptr *= in_gain;
-	    buffer->vector[channel].data[i] = ptr;
-        }
-    }*/
-}
-
 
 static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src) 
 {
