@@ -111,6 +111,12 @@ static void px_assert_stereo(void* control_pointer, float* channel_one_pointer, 
 #ifndef PX_MEMORY_H
 #define PX_MEMORY_H
 
+/*
+	px_memory.h
+
+	some helpful macros for debbuging malloc and free calls
+
+*/
 
 #define px_malloc(a) \
 	malloc(a);   \
@@ -127,8 +133,32 @@ static void px_assert_stereo(void* control_pointer, float* channel_one_pointer, 
 /* -------------------------------------------------------------------------
 
 
-    type generic vector
+    type generic vector, used in px_equalizer for filter bank
 
+    void** structure allocates void* per index
+
+    resizable vector operations, but too slow for processing hence BUFFER_TYPE* in buffer
+    instead of px_vector of float* values
+
+    // include
+    px_vector.h
+
+
+    // allocate
+
+    px_vector vector; //stack
+    px_vector_initialize(&px_vector);
+
+    px_vector* px_vector_create(); //heap
+    // calls initialize
+
+    initialize function has no allocation, malloc and realloc happen when vector is resized
+    or values are pushed into the vector
+
+    // use in context
+
+    px_biquad* new_filter = px_biquad_create(equalizer->sample_rate, type);
+    px_vector_push(&equalizer->filter_bank, new_filter);
 
    -------------------------------------------------------------------------*/
 
@@ -1246,6 +1276,22 @@ static inline void px_biquad_update_coefficients(const px_biquad_parameters para
 #ifndef PX_SATURATOR_H
 #define PX_SATURATOR_H
 
+/*
+    px_saturator.h
+
+    simple saturator with tangential transfer curve, used for drive/gain
+    stereo processing affects both channels equally
+
+    // set drive in DB
+
+        float drive = 12.f;
+        px_saturator saturator;
+        px_saturator_initialize(&saturator);
+
+        px_saturator_set_drive(&saturator, drive);
+
+*/
+
 typedef enum
 {
     ARCTANGENT,
@@ -1345,6 +1391,8 @@ static void px_saturator_stereo_process(px_saturator* saturator, float* input_le
 		break;
     }
 }
+
+// ----------------------------------------------------------------------------
 
 static inline float px_saturate_arctangent(float input, float drive)
 {
@@ -1500,6 +1548,28 @@ static inline float arctangent_clip(float input)
 
 #ifndef PX_EQUALIZER_H
 #define PX_EQUALIZER_H
+
+/*
+	px_equalizer.h
+
+	
+
+
+
+
+
+
+
+
+
+*/
+
+
+
+
+
+
+
 
 #define MAX_BANDS 24
 
