@@ -6,6 +6,28 @@
 #ifndef PX_EQUALIZER_H
 #define PX_EQUALIZER_H
 
+/*
+	px_equalizer.h
+
+	
+
+
+
+
+
+
+
+
+
+*/
+
+
+
+
+
+
+
+
 #define MAX_BANDS 24
 
 	typedef struct px_mono_equalizer

@@ -5,6 +5,22 @@
 #ifndef PX_SATURATOR_H
 #define PX_SATURATOR_H
 
+/*
+    px_saturator.h
+
+    simple saturator with tangential transfer curve, used for drive/gain
+    stereo processing affects both channels equally
+
+    // set drive in DB
+
+        float drive = 12.f;
+        px_saturator saturator;
+        px_saturator_initialize(&saturator);
+
+        px_saturator_set_drive(&saturator, drive);
+
+*/
+
 typedef enum
 {
     ARCTANGENT,
@@ -104,6 +120,8 @@ static void px_saturator_stereo_process(px_saturator* saturator, float* input_le
 		break;
     }
 }
+
+// ----------------------------------------------------------------------------
 
 static inline float px_saturate_arctangent(float input, float drive)
 {

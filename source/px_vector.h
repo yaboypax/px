@@ -6,8 +6,32 @@
 /* -------------------------------------------------------------------------
 
 
-    type generic vector
+    type generic vector, used in px_equalizer for filter bank
 
+    void** structure allocates void* per index
+
+    resizable vector operations, but too slow for processing hence BUFFER_TYPE* in buffer
+    instead of px_vector of float* values
+
+    // include
+    px_vector.h
+
+
+    // allocate
+
+    px_vector vector; //stack
+    px_vector_initialize(&px_vector);
+
+    px_vector* px_vector_create(); //heap
+    // calls initialize
+
+    initialize function has no allocation, malloc and realloc happen when vector is resized
+    or values are pushed into the vector
+
+    // use in context
+
+    px_biquad* new_filter = px_biquad_create(equalizer->sample_rate, type);
+    px_vector_push(&equalizer->filter_bank, new_filter);
 
    -------------------------------------------------------------------------*/
 

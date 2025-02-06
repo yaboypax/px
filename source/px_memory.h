@@ -1,6 +1,12 @@
 #ifndef PX_MEMORY_H
 #define PX_MEMORY_H
 
+/*
+	px_memory.h
+
+	some helpful macros for debbuging malloc and free calls
+
+*/
 
 #define px_malloc(a) \
 	malloc(a);   \
