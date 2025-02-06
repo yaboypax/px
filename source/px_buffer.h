@@ -9,15 +9,12 @@
 
   Somewhat type generic (double/float) buffer for working with px_. Includes internal array of type generic (void*) px_vector.
 
-  //include
+    //include
 
-  #define PX_FLOAT_BUFFER
-  #include "px_buffer.h"
-
-  	or:
-
-  #define PX_DOUBLE_BUFFER
-  #include "px_buffer.h"
+    //for double processing don't forget to define before header:
+    #define PX_DOUBLE_BUFFER //otherwise defaults to float processing 
+    
+    #include "px_buffer.h"
 
 
 
@@ -32,6 +29,7 @@
 		// initialize called within create()
 	free:
 		px_buffer_destroy(buffer);
+        px_buffer_clear(buffer);
 
 
 
@@ -60,22 +58,14 @@
 
 	get_pointer:
 
-		for (int i = 0; i < buffer.num_samples; ++i) 
-		{
-			float* left_value = px_buffer_get_pointer(&buffer, 0, i);
-			float* right_value = px_buffer_get_pointer(&buffer, 1, i);
-		}
+		float* left_ptr = px_buffer_get_write_pointer(&buffer, 0);
+		float* right_ptr = px_buffer_get_write_pointer(&buffer, 1);
 
+    
+    interleaved:
 
-		for (int channel = 0; i < buffer.num_channels; ++channel)
-		{	
-			for (int sample = 0; i < buffer.num_samples; ++sample) 
-			{
-				float* value = px_buffer_get_pointer(&buffer, channel, i);
-			}
-		}
-
-
+        // heap allocation interleaved function
+        px_interleaved* interleaved = px_buffer_to_interleaved(&buffer);
 
 */
 
@@ -83,10 +73,10 @@
 	#define MAX_CHANNELS 4
 #endif
 
-#ifdef PX_FLOAT_BUFFER
-	#define BUFFER_TYPE float
-#elif PX_DOUBLE_BUFFER
-	#define BUFFER_TYPE double
+#ifdef PX_DOUBLE_BUFFER
+	typedef double BUFFER_TYPE;
+#else
+	typedef float BUFFER_TYPE;
 #endif
 
 typedef struct 
@@ -114,7 +104,7 @@ static void px_buffer_clear(px_buffer* buffer);
 
 static void px_buffer_set_sample(px_buffer* buffer, int channel, int sample_position, BUFFER_TYPE value);
 static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int sample_position);
-static BUFFER_TYPE* px_buffer_get_pointer(px_buffer* buffer, int channel);
+static BUFFER_TYPE* px_buffer_get_write_pointer(px_buffer* buffer, int channel);
 
 static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src); 
 
@@ -238,18 +228,32 @@ static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src)
 
 }
 
+/*
 
+    px_circular_buffer used in px_delay_line
 
+    push, pop methods added for FIFO ring behavior
+*/
 
 typedef struct {
-    float* data;
+    BUFFER_TYPE* data;
     int head;
     int tail;
     int max_length;
 } px_circular_buffer;
 
+// -------------------------------------------------------------------------------
 
-static void px_circular_push(px_circular_buffer* buffer, float value)
+static void px_circular_push(px_circular_buffer* buffer, BUFFER_TYPE value);
+static BUFFER_TYPE px_circular_pop(px_circular_buffer* buffer);
+static BUFFER_TYPE px_circular_get_sample(px_circular_buffer* buffer, size_t index);
+
+static void px_circular_initialize(px_circular_buffer* buffer, int max_length);
+static void px_circular_resize(px_circular_buffer* buffer, int new_size);
+
+// -------------------------------------------------------------------------------
+
+static void px_circular_push(px_circular_buffer* buffer, BUFFER_TYPE value)
 {
     int next = (buffer->head + 1) % buffer->max_length;
 
@@ -261,11 +265,11 @@ static void px_circular_push(px_circular_buffer* buffer, float value)
     buffer->head = next;
 }
 
-static float px_circular_pop(px_circular_buffer* buffer)
+static BUFFER_TYPE px_circular_pop(px_circular_buffer* buffer)
 {
     assert(buffer->head != buffer->tail); // Buffer is not empty
 
-    float value = buffer->data[buffer->tail];
+    BUFFER_TYPE value = buffer->data[buffer->tail];
     int next = buffer->tail + 1;
     if (next >= buffer->max_length)
         next = 0;
@@ -274,7 +278,7 @@ static float px_circular_pop(px_circular_buffer* buffer)
     return value;
 }
 
-static float px_circular_get_sample(px_circular_buffer* buffer, size_t index)
+static BUFFER_TYPE px_circular_get_sample(px_circular_buffer* buffer, size_t index)
 {
     assert(index >= 0 && index < buffer->max_length);
     return buffer->data[index % buffer->max_length];
@@ -284,8 +288,8 @@ static void px_circular_initialize(px_circular_buffer* buffer, int max_length)
 {
     assert(max_length > 0);
 
-    buffer->data = (float*)px_malloc(sizeof(float) * max_length);
-    memset(buffer->data, 0, sizeof(float) * max_length);
+    buffer->data = (BUFFER_TYPE*)px_malloc(sizeof(BUFFER_TYPE) * max_length);
+    memset(buffer->data, 0, sizeof(BUFFER_TYPE) * max_length);
 
     buffer->head = 0;
     buffer->tail = 0;
@@ -293,7 +297,7 @@ static void px_circular_initialize(px_circular_buffer* buffer, int max_length)
 }
 static void px_circular_resize(px_circular_buffer* buffer, int new_size)
 {
-    float* new_data = (float*)px_malloc(sizeof(float) * new_size);
+    BUFFER_TYPE* new_data = (BUFFER_TYPE*)px_malloc(sizeof(BUFFER_TYPE) * new_size);
     
     int i = 0;
     int j = buffer->head;
