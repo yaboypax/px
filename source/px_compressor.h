@@ -112,50 +112,12 @@ static void px_compressor_ms_destroy(px_ms_compressor* compressor);
 
 #ifdef PX_USE_GENERICS
 
-#define px_compressor_process(a,...) _Generic((a),			\
-	px_mono_compressor*: px_compressor_mono_process,		\
-	px_stereo_compressor*: px_compressor_stereo_process),		\
-		(a, __VA_ARGS__)
+#define px_compressor_mono_set(comp, ...) \
+	px_compressor_mono_set_parameters((comp), (px_compressor_parameters){ __VA_ARGS__})
 
-#define px_compressor_initialize(a,b) _Generic((a),			\
-	px_mono_compressor*: px_compressor_mono_initialize,		\
-	px_stereo_compressor*: px_compressor_stereo_initialize),	\
-		(a,b)
+#define px_compressor_stereo_set(comp, ...) \
+	px_compressor_stereo_set_parameters((comp), (px_compressor_parameters){ __VA_ARGS__})
 
-#define px_compressor_set_parameters(a,b) _Generic((a),               	\
-	px_mono_compressor*: px_compressor_mono_set_parameters,       	\
-	px_stereo_compressor*: px_compressor_stereo_set_parameters),  	\
-		(a,b) 		             
-
-#define px_compressor_set_threshold(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_threshold,		\
-	px_stereo_compressor*: px_compressor_stereo_set_threshold),	\
-		(a,b)
-
-#define px_compressor_set_ratio(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_ratio,		\
-	px_stereo_compressor*: px_compressor_stereo_set_ratio),		\
-		(a,b)
-
-#define px_compressor_set_knee(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_knee,		\
-	px_stereo_compressor*: px_compressor_stereo_set_knee),		\
-		(a,b)
-
-#define px_compressor_set_attack(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_attack,		\
-	px_stereo_compressor*: px_compressor_stere_set_attack),		\
-		(a,b)
-
-#define px_compressor_set_release(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_release,		\
-	px_stereo_compressor*: px_compressor_stereo_set_release),	\
-		(a,b)
-
-#define px_compressor_set_makeup_gain(a,b) _Generic((a),	     	\
-	px_mono_compressor*: px_compressor_mono_set_makeup_gain,	\
-	px_stereo_compressor*: px_compressor_stereo_set_makeup_gain),	\
-		(a,b)
 #endif
 
 
