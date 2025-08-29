@@ -120,7 +120,9 @@ static void px_compressor_ms_destroy(px_ms_compressor* compressor);
 
 #endif
 
-
+#define PX_DUAL_MONO true
+#define PX_STEREO    false
+#define PX_MID_SIDE  false
 
 // ----------------------------------------------------------------------------------------------------------------------
 // mono
