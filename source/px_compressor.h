@@ -109,17 +109,6 @@ static void px_compressor_stereo_destroy(px_stereo_compressor* compressor);
 static px_ms_compressor* px_compressor_ms_create(float in_sample_rate);
 static void px_compressor_ms_destroy(px_ms_compressor* compressor);
 
-
-#ifdef PX_USE_GENERICS
-
-#define px_compressor_mono_set(comp, ...) \
-	px_compressor_mono_set_parameters((comp), (px_compressor_parameters){ __VA_ARGS__})
-
-#define px_compressor_stereo_set(comp, ...) \
-	px_compressor_stereo_set_parameters((comp), (px_compressor_parameters){ __VA_ARGS__})
-
-#endif
-
 #define PX_DUAL_MONO true
 #define PX_STEREO    false
 #define PX_MID_SIDE  false
