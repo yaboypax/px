@@ -133,10 +133,17 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	printf("Data Size: %d\n", data.data_size);
 	
 	int samples = data.data_size/data.channels;
-	px_buffer_initialize(buffer, data.channels, samples );
-	
-	//fread(buffer->data, 1, data.data_size, file);  
+	px_buffer_initialize(buffer, data.channels, samples);
 
+	int16_t* raw_data = px_malloc(data.data_size); 
+	fread(raw_data, 1, data.data_size, file);  
+	printf("Raw Data read without seg fault\n");
+
+	for (size_t i = 0; i < data.data_size/2; ++i)
+	{
+		px_buffer_set_sample(buffer, 0, i,(float)(raw_data[i]/INT16_MAX)); 
+		px_buffer_set_sample(buffer, 1, i,(float)(raw_data[i+1]/INT16_MAX));
+	}
 	
 	fclose(file);	
 	return true;
