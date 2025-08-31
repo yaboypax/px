@@ -2,7 +2,7 @@
 
 /*
 
-	Convert WAV file to px_buffer float buffer.
+	Convert file into px_buffer float buffer.
 
 */
 
@@ -20,11 +20,26 @@ typedef struct {
 	int32_t	data_size;
 } px_wav_data;
 
-px_buffer  px_convert_stack(px_buffer* buffer, const char* path);
-//px_buffer* px_convert_heap(const char* path);
+static void px_convert(px_buffer* buffer, const char* path);
+static bool px_convert_wav(px_buffer* buffer, const char* path);
 
-bool px_convert_wav(px_buffer* buffer, const char* path);
-bool px_convert_wav(px_buffer* buffer, const char* path) 
+
+static void px_convert(px_buffer* buffer, const char* path)
+{
+	assert(buffer);
+	char* extension = strrchr(path,'.');	
+	if(extension != NULL ) {
+     		if(strcmp(extension,".wav") == 0) {
+			bool result = px_convert_wav(buffer, path);
+			if (!result) printf("Error Reading Wave File At: %s\n", path);
+			return;
+      		} else {
+			printf("File Format Unsupported.\n Supported Formats: .wav\n");
+		}
+  	}	 
+}
+
+static bool px_convert_wav(px_buffer* buffer, const char* path) 
 {
 
 	px_wav_data data = {0};
