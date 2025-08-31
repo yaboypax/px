@@ -1,9 +1,18 @@
 #include "px_buffer.h"
 
+#ifndef PX_CONVERTER_H
+#define PX_CONVERTER_H
+
+
 /*
 
 	Convert file into px_buffer float buffer.
+	So far only .wav is supported.
 
+	USE:
+
+	px_buffer buffer;
+	px_convert(&buffer, file_path);
 */
 
 
@@ -115,3 +124,5 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	fclose(file);	
 	return true;
 }
+
+#endif
