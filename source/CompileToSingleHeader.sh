@@ -4,7 +4,7 @@
 output_file="../px_audio.h"
 > "$output_file" 
 
-header_files=("px_globals.h" "px_memory.h" "px_vector.h" "px_buffer.h" "px_delay.h" "px_biquad.h" "px_saturator.h" "px_clip.h" "px_equalizer.h" "px_compressor.h")
+header_files=("px_globals.h" "px_memory.h" "px_vector.h" "px_buffer.h" "px_converter.h" "px_delay.h" "px_biquad.h" "px_saturator.h" "px_clip.h" "px_equalizer.h" "px_compressor.h")
 
 cat "${header_files[0]}" >> "$output_file"
 
