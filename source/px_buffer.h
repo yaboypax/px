@@ -23,9 +23,9 @@
 	stack initialize:
 		
 		px_buffer buffer;
-		px_buffer_initialize(&buffer, (int)num_samples, (int)num_channels);
+		px_buffer_initialize(&buffer, (int)num_channels, (int)num_samples);
 	heap:
-		px_buffer* buffer = px_buffer_create( (int)num_samples, (int)num_channels);
+		px_buffer* buffer = px_buffer_create( (int)num_channels, (int)num_samples);
 		// initialize called within create()
 	free:
 		px_buffer_destroy(buffer);
