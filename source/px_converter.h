@@ -29,9 +29,13 @@ typedef struct {
 	int32_t	data_size;
 } px_wav_data;
 
+typedef enum { WAVE=0 } FILE_TYPE; 
+
 static void px_convert(px_buffer* buffer, const char* path);
 static bool px_convert_wav(px_buffer* buffer, const char* path);
 
+static void px_write(px_buffer*, const char* path, FILE_TYPE type);
+static bool px_write_wav(px_buffer*, const char* path, int32_t sample_rate, int16_t bit_depth);
 
 static void px_convert(px_buffer* buffer, const char* path)
 {
@@ -46,6 +50,14 @@ static void px_convert(px_buffer* buffer, const char* path)
 			printf("File Format Unsupported.\n Supported Formats: .wav\n");
 		}
   	}	 
+}
+
+static void px_write(px_buffer* buffer, const char* path, FILE_TYPE type)
+{
+	assert(buffer);
+	if (type == WAVE) {
+		px_write_wav(buffer, path, 44100, 16);
+	} else printf("Only WAV Supported\n");
 }
 
 static bool px_convert_wav(px_buffer* buffer, const char* path) 
@@ -120,9 +132,49 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	fread(&data.data_size, 4, 1, file);
 	printf("Data Size: %d\n", data.data_size);
 	
-	px_buffer_initialize(buffer, data.channels, (data.data_size/data.channels) );
+	int samples = data.data_size/data.channels;
+	px_buffer_initialize(buffer, data.channels, samples );
+	
+	//fread(buffer->data, 1, data.data_size, file);  
+
+	
 	fclose(file);	
 	return true;
 }
 
+static bool px_write_wav(px_buffer* buffer, const char* path, int32_t sample_rate, int16_t bit_depth)
+{
+
+	FILE* file = fopen(path, "a");
+	fprintf(file, "RIFF"); //RIFF Header
+	int32_t file_size = (buffer->num_samples*buffer->num_channels)+44-8;
+	fprintf(file, "%d", file_size);
+	fprintf(file, "WAVE");
+	fprintf(file, "fmt ");
+	fprintf(file, "%d", 16);
+	fprintf(file, "%d", 1);
+	fprintf(file, "%d", (int16_t) buffer->num_channels);
+	fprintf(file, "%d", sample_rate);
+	
+	int32_t bytes_per_second = sample_rate * bit_depth * buffer->num_channels / 8;		
+	fprintf(file, "%d", bytes_per_second);
+	
+	int16_t block_align = buffer->num_channels * bit_depth / 8; 
+	fprintf(file, "%d", block_align);
+	fprintf(file, "%d", bit_depth);
+
+	fprintf(file, "data");
+	fprintf(file, "%d", (int32_t)(buffer->num_samples*buffer->num_channels));
+	
+	for (size_t i = 0; i < buffer->num_samples; ++i)
+	{
+		float left = px_buffer_get_sample(buffer, 0, i);
+		float right = px_buffer_get_sample(buffer, 1, i);
+		
+		fprintf(file, "%d%d", (int16_t)(left*INT16_MAX), (int16_t)(right*INT16_MAX));
+	}
+
+	fclose(file);
+	return true;
+}
 #endif
