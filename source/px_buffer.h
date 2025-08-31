@@ -107,6 +107,7 @@ static BUFFER_TYPE px_buffer_get_sample(px_buffer* buffer, int channel, int samp
 static BUFFER_TYPE* px_buffer_get_write_pointer(px_buffer* buffer, int channel);
 
 static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src); 
+static px_buffer* px_interleaved_to_buffer(const px_interleaved_buffer* src);
 
 // --------------------------------------------------------------------------------------------------------
 
@@ -202,12 +203,13 @@ static BUFFER_TYPE* px_buffer_get_write_pointer(px_buffer* buffer, int channel)
 
 static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src) 
 {
+	assert(src);
 	px_interleaved_buffer* interleaved_buffer = (px_interleaved_buffer*)malloc(sizeof(px_interleaved_buffer));
 	if (!interleaved_buffer) return NULL;
 	
 	interleaved_buffer->num_samples = src->num_samples;
-    interleaved_buffer->num_channels = src->num_channels;
-    interleaved_buffer->is_filled = src->is_filled;
+	interleaved_buffer->num_channels = src->num_channels;
+  	interleaved_buffer->is_filled = src->is_filled;
 	
 	size_t total_samples = src->num_samples * src->num_channels;
 	interleaved_buffer->data = (BUFFER_TYPE*)malloc(total_samples * sizeof(BUFFER_TYPE));
@@ -227,6 +229,36 @@ static px_interleaved_buffer* px_buffer_to_interleaved(const px_buffer* src)
 	return interleaved_buffer;
 
 }
+
+static px_buffer* px_interleaved_to_buffer(const px_interleaved_buffer* src)
+{
+	assert(src);
+        px_buffer* buffer = (px_buffer*)malloc(sizeof(px_buffer));
+        if (!buffer) return NULL;
+
+        buffer->num_samples = src->num_samples;
+        buffer->num_channels = src->num_channels;
+        buffer->is_filled = src->is_filled;
+
+	for (int channel = 0; channel < buffer->num_channels; ++channel)
+	{
+        	buffer->data[channel] = (BUFFER_TYPE*)malloc(buffer->num_samples * sizeof(BUFFER_TYPE));
+        }
+	
+        for (int sample = 0; sample < src->num_samples; ++sample) {
+                for (int channel = 0; channel < src->num_channels; ++channel) {
+                        int interleaved_index = sample * src->num_channels + channel;
+                        px_buffer_set_sample(buffer, channel, sample, src->data[interleaved_index]);
+        	}
+    	}	
+
+        return buffer;
+
+} 
+
+//static void px_interleaved_buffer_initialize(px_interleaved_buffer* buffer, int num_channels, int num_samples);
+//static px_buffer* px_interleaved_to_buffer(const px_interleaved_buffer* src);
+ 
 
 /*
 
