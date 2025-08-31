@@ -331,9 +331,9 @@ static void px_vector_resize(px_vector* vector, const size_t new_size)
 	stack initialize:
 		
 		px_buffer buffer;
-		px_buffer_initialize(&buffer, (int)num_samples, (int)num_channels);
+		px_buffer_initialize(&buffer, (int)num_channels, (int)num_samples);
 	heap:
-		px_buffer* buffer = px_buffer_create( (int)num_samples, (int)num_channels);
+		px_buffer* buffer = px_buffer_create( (int)num_channels, (int)num_samples);
 		// initialize called within create()
 	free:
 		px_buffer_destroy(buffer);
@@ -2158,56 +2158,9 @@ static void px_compressor_stereo_destroy(px_stereo_compressor* compressor);
 static px_ms_compressor* px_compressor_ms_create(float in_sample_rate);
 static void px_compressor_ms_destroy(px_ms_compressor* compressor);
 
-
-#ifdef PX_USE_GENERICS
-
-#define px_compressor_process(a,...) _Generic((a),			\
-	px_mono_compressor*: px_compressor_mono_process,		\
-	px_stereo_compressor*: px_compressor_stereo_process),		\
-		(a, __VA_ARGS__)
-
-#define px_compressor_initialize(a,b) _Generic((a),			\
-	px_mono_compressor*: px_compressor_mono_initialize,		\
-	px_stereo_compressor*: px_compressor_stereo_initialize),	\
-		(a,b)
-
-#define px_compressor_set_parameters(a,b) _Generic((a),               	\
-	px_mono_compressor*: px_compressor_mono_set_parameters,       	\
-	px_stereo_compressor*: px_compressor_stereo_set_parameters),  	\
-		(a,b) 		             
-
-#define px_compressor_set_threshold(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_threshold,		\
-	px_stereo_compressor*: px_compressor_stereo_set_threshold),	\
-		(a,b)
-
-#define px_compressor_set_ratio(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_ratio,		\
-	px_stereo_compressor*: px_compressor_stereo_set_ratio),		\
-		(a,b)
-
-#define px_compressor_set_knee(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_knee,		\
-	px_stereo_compressor*: px_compressor_stereo_set_knee),		\
-		(a,b)
-
-#define px_compressor_set_attack(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_attack,		\
-	px_stereo_compressor*: px_compressor_stere_set_attack),		\
-		(a,b)
-
-#define px_compressor_set_release(a,b) _Generic((a),		     	\
-	px_mono_compressor*: px_compressor_mono_set_release,		\
-	px_stereo_compressor*: px_compressor_stereo_set_release),	\
-		(a,b)
-
-#define px_compressor_set_makeup_gain(a,b) _Generic((a),	     	\
-	px_mono_compressor*: px_compressor_mono_set_makeup_gain,	\
-	px_stereo_compressor*: px_compressor_stereo_set_makeup_gain),	\
-		(a,b)
-#endif
-
-
+#define PX_DUAL_MONO true
+#define PX_STEREO    false
+#define PX_MID_SIDE  false
 
 // ----------------------------------------------------------------------------------------------------------------------
 // mono
