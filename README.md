@@ -6,6 +6,7 @@ px_Audio is a header only DSP library based on the STB header-only library struc
 - px_globals
 - px_memory
 - px_vector
+- px_converter
 
 ## DSP Objects
 
