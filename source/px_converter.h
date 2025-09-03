@@ -35,7 +35,7 @@ static void px_convert(px_buffer* buffer, const char* path);
 static bool px_convert_wav(px_buffer* buffer, const char* path);
 
 static void px_write(px_buffer*, const char* path, FILE_TYPE type);
-static bool px_write_wav(px_buffer*, const char* path, int32_t sample_rate, int16_t bit_depth);
+static bool px_write_wav(px_buffer*, const char* path, int32_t* sample_rate, int16_t* bit_depth);
 
 static void px_convert(px_buffer* buffer, const char* path)
 {
@@ -55,8 +55,10 @@ static void px_convert(px_buffer* buffer, const char* path)
 static void px_write(px_buffer* buffer, const char* path, FILE_TYPE type)
 {
 	assert(buffer);
+	int32_t sample_rate = 44100;
+	int16_t bit_depth = 16;
 	if (type == WAVE) {
-		px_write_wav(buffer, path, 44100, 16);
+		px_write_wav(buffer, path, &sample_rate, &bit_depth);
 	} else printf("Only WAV Supported\n");
 }
 
@@ -132,14 +134,14 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	fread(&data.data_size, 4, 1, file);
 	printf("Data Size: %d\n", data.data_size);
 	
-	int samples = data.data_size/data.channels;
+	int samples = data.data_size/(data.channels*data.bits_per_sample);
 	px_buffer_initialize(buffer, data.channels, samples);
 
 	int16_t* raw_data = px_malloc(data.data_size); 
 	fread(raw_data, 1, data.data_size, file);  
 	printf("Raw Data read without seg fault\n");
 
-	for (size_t i = 0; i < data.data_size/2; ++i)
+	for (size_t i = 0; i < samples; ++i)
 	{
 		px_buffer_set_sample(buffer, 0, i,(float)(raw_data[i]/INT16_MAX)); 
 		px_buffer_set_sample(buffer, 1, i,(float)(raw_data[i+1]/INT16_MAX));
@@ -161,34 +163,34 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 	int32_t file_size = (buffer->num_samples*buffer->num_channels)+44-8;
 	fwrite(&file_size, 4, 1, file);
 	
-	const char* wave = "WAVE"
+	const char* wave = "WAVE";
 	fwrite(wave, 1, 4, file);
 	
-	const char* fmt = "fmt "
+	const char* fmt = "fmt ";
 	fwrite(fmt, 1, 4, file);
 	
 	int32_t format_length = 16;
 	fwrite(&format_length, 4, 1, file);
 	
 	int16_t format_type = 1;
-	fwrite(&format_type, 2, 1, file)
+	fwrite(&format_type, 2, 1, file);
 
 	fwrite(&buffer->num_channels, 2, 1, file);
 	
 	fwrite(sample_rate, 4, 1, file);
 	
-	int32_t bytes_per_second = sample_rate * bit_depth * buffer->num_channels / 8;		
+	int32_t bytes_per_second = (int32_t)(*sample_rate * *bit_depth * buffer->num_channels / 8);		
 	fwrite(&bytes_per_second, 4, 1, file);
 	
-	int16_t block_align = buffer->num_channels * bit_depth / 8; 
+	int16_t block_align = (int16_t)(buffer->num_channels * *bit_depth / 8); 
 	fwrite(&block_align, 2, 1, file);
 
 	fwrite(bit_depth, 2, 1, file);
 
-	const char* data = "data"
+	const char* data = "data";
 	fwrite(data, 1, 4, file);
 
-	int32_t data_length = (buffer->num_samples*buffer->num_channels);
+	int32_t data_length = (int32_t)(buffer->num_samples * *bit_depth * buffer->num_channels);
 	fwrite(&data_length, 4, 1, file);
 	
 	for (size_t i = 0; i < buffer->num_samples; ++i)
