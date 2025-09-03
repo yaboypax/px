@@ -149,36 +149,55 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	return true;
 }
 
-static bool px_write_wav(px_buffer* buffer, const char* path, int32_t sample_rate, int16_t bit_depth)
+static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_rate, int16_t* bit_depth)
 {
+	assert(buffer);
 
-	FILE* file = fopen(path, "a");
-	fprintf(file, "RIFF"); //RIFF Header
+	FILE* file = fopen(path, "wb");
+
+	const char* riff = "RIFF";
+	fwrite(riff, 1, 4, file); //RIFF Header
+	
 	int32_t file_size = (buffer->num_samples*buffer->num_channels)+44-8;
-	fprintf(file, "%d", file_size);
-	fprintf(file, "WAVE");
-	fprintf(file, "fmt ");
-	fprintf(file, "%d", 16);
-	fprintf(file, "%d", 1);
-	fprintf(file, "%d", (int16_t) buffer->num_channels);
-	fprintf(file, "%d", sample_rate);
+	fwrite(&file_size, 4, 1, file);
+	
+	const char* wave = "WAVE"
+	fwrite(wave, 1, 4, file);
+	
+	const char* fmt = "fmt "
+	fwrite(fmt, 1, 4, file);
+	
+	int32_t format_length = 16;
+	fwrite(&format_length, 4, 1, file);
+	
+	int16_t format_type = 1;
+	fwrite(&format_type, 2, 1, file)
+
+	fwrite(&buffer->num_channels, 2, 1, file);
+	
+	fwrite(sample_rate, 4, 1, file);
 	
 	int32_t bytes_per_second = sample_rate * bit_depth * buffer->num_channels / 8;		
-	fprintf(file, "%d", bytes_per_second);
+	fwrite(&bytes_per_second, 4, 1, file);
 	
 	int16_t block_align = buffer->num_channels * bit_depth / 8; 
-	fprintf(file, "%d", block_align);
-	fprintf(file, "%d", bit_depth);
+	fwrite(&block_align, 2, 1, file);
 
-	fprintf(file, "data");
-	fprintf(file, "%d", (int32_t)(buffer->num_samples*buffer->num_channels));
+	fwrite(bit_depth, 2, 1, file);
+
+	const char* data = "data"
+	fwrite(data, 1, 4, file);
+
+	int32_t data_length = (buffer->num_samples*buffer->num_channels);
+	fwrite(&data_length, 4, 1, file);
 	
 	for (size_t i = 0; i < buffer->num_samples; ++i)
 	{
-		float left = px_buffer_get_sample(buffer, 0, i);
-		float right = px_buffer_get_sample(buffer, 1, i);
+		int16_t left = (int16_t)(px_buffer_get_sample(buffer, 0, i)*INT16_MAX);
+		int16_t right = (int16_t)(px_buffer_get_sample(buffer, 1, i)*INT16_MAX);
 		
-		fprintf(file, "%d%d", (int16_t)(left*INT16_MAX), (int16_t)(right*INT16_MAX));
+		fwrite(&left, 2, 1, file); 
+		fwrite(&right, 2, 1, file);
 	}
 
 	fclose(file);
