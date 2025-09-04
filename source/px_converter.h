@@ -134,7 +134,8 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	fread(&data.data_size, 4, 1, file);
 	printf("Data Size: %d\n", data.data_size);
 	
-	int samples = data.data_size/(data.channels*data.bits_per_sample);
+    // really frames or samples per channel
+    int samples = (int)(data.data_size / (data.channels * (data.bits_per_sample / 8)));
 	px_buffer_initialize(buffer, data.channels, samples);
 
 	int16_t* raw_data = px_malloc(data.data_size); 
