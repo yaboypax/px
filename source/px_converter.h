@@ -158,40 +158,35 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 
 	FILE* file = fopen(path, "wb");
 
+	const int32_t format_length = 16;
+	const int16_t format_type = 1;
+	const int32_t bytes_per_second = (int32_t)(*sample_rate * *bit_depth * buffer->num_channels / 8);
+	const int16_t block_align = (int16_t)(buffer->num_channels * *bit_depth / 8);
+	const int32_t data_length = (int32_t)(buffer->num_samples * (*bit_depth/8) * buffer->num_channels);
+	const int32_t file_size = data_length+36;
+
+	printf("WRITE---------\nFormat Length: %d\nFormat Type: %d\nBytes Per Second: %d\nBlock Align: %d\nData Length: %d\nFile Size%d\n",
+		   format_length, format_type, bytes_per_second, block_align, data_length, file_size);
+
 	const char* riff = "RIFF";
-	fwrite(riff, 1, 4, file); //RIFF Header
-	
-	int32_t file_size = (buffer->num_samples*buffer->num_channels)+44-8;
-	fwrite(&file_size, 4, 1, file);
-	
 	const char* wave = "WAVE";
-	fwrite(wave, 1, 4, file);
-	
 	const char* fmt = "fmt ";
+	const char* data = "data";
+
+	fwrite(riff, 1, 4, file); //RIFF Header
+	fwrite(&file_size, 4, 1, file);
+	fwrite(wave, 1, 4, file);
 	fwrite(fmt, 1, 4, file);
 	
-	int32_t format_length = 16;
 	fwrite(&format_length, 4, 1, file);
-	
-	int16_t format_type = 1;
 	fwrite(&format_type, 2, 1, file);
-
 	fwrite(&buffer->num_channels, 2, 1, file);
-	
 	fwrite(sample_rate, 4, 1, file);
 	
-	int32_t bytes_per_second = (int32_t)(*sample_rate * *bit_depth * buffer->num_channels / 8);		
 	fwrite(&bytes_per_second, 4, 1, file);
-	
-	int16_t block_align = (int16_t)(buffer->num_channels * *bit_depth / 8); 
 	fwrite(&block_align, 2, 1, file);
-
 	fwrite(bit_depth, 2, 1, file);
-
-	const char* data = "data";
 	fwrite(data, 1, 4, file);
-
-	int32_t data_length = (int32_t)(buffer->num_samples * *bit_depth * buffer->num_channels);
 	fwrite(&data_length, 4, 1, file);
 	
 	for (size_t i = 0; i < buffer->num_samples; ++i)
