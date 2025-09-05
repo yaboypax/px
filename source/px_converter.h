@@ -29,13 +29,19 @@ typedef struct {
 	int32_t	data_size;
 } px_wav_data;
 
+typedef struct {
+	bool log_header;
+	bool interleaved_buffer;
+} px_converter_flags;
+
+
 typedef enum { WAVE=0 } FILE_TYPE; 
 
 static void px_convert(px_buffer* buffer, const char* path);
 static bool px_convert_wav(px_buffer* buffer, const char* path);
 
 static void px_write(px_buffer*, const char* path, FILE_TYPE type);
-static bool px_write_wav(px_buffer*, const char* path, int32_t* sample_rate, int16_t* bit_depth);
+static bool px_write_wav(px_buffer*, const char* path, int32_t* sample_rate, int16_t* bit_depth, bool log_header);
 
 static void px_convert(px_buffer* buffer, const char* path)
 {
@@ -58,7 +64,7 @@ static void px_write(px_buffer* buffer, const char* path, FILE_TYPE type)
 	int32_t sample_rate = 44100;
 	int16_t bit_depth = 16;
 	if (type == WAVE) {
-		px_write_wav(buffer, path, &sample_rate, &bit_depth);
+		px_write_wav(buffer, path, &sample_rate, &bit_depth, true);
 	} else printf("Only WAV Supported\n");
 }
 
@@ -152,7 +158,7 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	return true;
 }
 
-static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_rate, int16_t* bit_depth)
+static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_rate, int16_t* bit_depth, bool log_header)
 {
 	assert(buffer);
 
@@ -166,7 +172,7 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 	const int32_t data_length = (int32_t)(buffer->num_samples * byte_count * buffer->num_channels);
 	const int32_t file_size = data_length+36;
 
-	printf("WRITE---------\nFormat Length: %d\nFormat Type: %d\nBytes Per Second: %d\nBlock Align: %d\nData Length: %d\nFile Size%d\n",
+	if (log_header) printf("WRITE---------\nFormat Length: %d\nFormat Type: %d\nBytes Per Second: %d\nBlock Align: %d\nData Length: %d\nFile Size%d\n",
 		   format_length, format_type, bytes_per_second, block_align, data_length, file_size);
 
 	const char* riff = "RIFF";
