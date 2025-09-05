@@ -135,11 +135,11 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	printf("Data Size: %d\n", data.data_size);
 	
     // really frames or samples per channel
-    int samples = (int)(data.data_size / (data.channels * (data.bits_per_sample / 8)));
+    int samples = (int)(data.data_size / (data.bits_per_sample / 8))/data.channels;
 	px_buffer_initialize(buffer, data.channels, samples);
 
 	int16_t* raw_data = px_malloc(data.data_size); 
-	fread(raw_data, 1, data.data_size, file);  
+	fread(raw_data, 2, data.data_size, file);
 	printf("Raw Data read without seg fault\n");
 
 	for (size_t i = 0; i < samples; ++i)
@@ -160,9 +160,10 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 
 	const int32_t format_length = 16;
 	const int16_t format_type = 1;
-	const int32_t bytes_per_second = (int32_t)(*sample_rate * *bit_depth * buffer->num_channels / 8);
-	const int16_t block_align = (int16_t)(buffer->num_channels * *bit_depth / 8);
-	const int32_t data_length = (int32_t)(buffer->num_samples * (*bit_depth/8) * buffer->num_channels);
+	const int     byte_count = *bit_depth/8;
+	const int32_t bytes_per_second = (int32_t)(*sample_rate * byte_count * buffer->num_channels);
+	const int16_t block_align = (int16_t)(buffer->num_channels * byte_count);
+	const int32_t data_length = (int32_t)(buffer->num_samples * byte_count * buffer->num_channels);
 	const int32_t file_size = data_length+36;
 
 	printf("WRITE---------\nFormat Length: %d\nFormat Type: %d\nBytes Per Second: %d\nBlock Align: %d\nData Length: %d\nFile Size%d\n",
@@ -194,7 +195,7 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 		int16_t left = (int16_t)(px_buffer_get_sample(buffer, 0, i)*INT16_MAX);
 		int16_t right = (int16_t)(px_buffer_get_sample(buffer, 1, i)*INT16_MAX);
 		
-		fwrite(&left, 2, 1, file); 
+		fwrite(&left, 2, 1, file);
 		fwrite(&right, 2, 1, file);
 	}
 
