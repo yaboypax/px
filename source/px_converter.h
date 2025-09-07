@@ -1,8 +1,10 @@
+
+#include "stdint.h"
 #include "px_buffer.h"
 
 #ifndef PX_CONVERTER_H
 #define PX_CONVERTER_H
-
+#define __STDC_WANT_LIB_EXT1__ 1
 
 /*
 
@@ -143,6 +145,7 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
     // really frames or samples per channel
     int samples = (int)(data.data_size / (data.bits_per_sample / 8))/data.channels;
 	px_buffer_initialize(buffer, data.channels, samples);
+	printf("Buffer Samples: %d\n", samples);
 
 	int16_t* raw_data = px_malloc(data.data_size); 
 	fread(raw_data, 2, data.data_size, file);
@@ -162,7 +165,12 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 {
 	assert(buffer);
 
-	FILE* file = fopen(path, "wb");
+	FILE* file;
+	errno_t err = fopen_s(&file, path, "wb");
+	if (err != 0 ) {
+		printf("Error opening file %s -> %d\n", path, err);
+		return false;
+	}
 
 	const int32_t format_length = 16;
 	const int16_t format_type = 1;
@@ -196,11 +204,11 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 	fwrite(data, 1, 4, file);
 	fwrite(&data_length, 4, 1, file);
 	
-	for (size_t i = 0; i < buffer->num_samples; ++i)
+	for (int i = 0; i < buffer->num_samples; ++i)
 	{
 		int16_t left = (int16_t)(px_buffer_get_sample(buffer, 0, i)*INT16_MAX);
 		int16_t right = (int16_t)(px_buffer_get_sample(buffer, 1, i)*INT16_MAX);
-		
+
 		fwrite(&left, 2, 1, file);
 		fwrite(&right, 2, 1, file);
 	}
