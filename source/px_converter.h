@@ -151,7 +151,7 @@ static bool px_convert_wav(px_buffer* buffer, const char* path)
 	fread(raw_data, 2, data.data_size, file);
 	printf("Raw Data read without seg fault\n");
 
-	for (size_t i = 0; i < samples; ++i)
+	for (int i = 0; i < samples; ++i)
 	{
 		px_buffer_set_sample(buffer, 0, i,(float)(raw_data[i]/INT16_MAX)); 
 		px_buffer_set_sample(buffer, 1, i,(float)(raw_data[i+1]/INT16_MAX));
@@ -175,9 +175,9 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 	const int32_t format_length = 16;
 	const int16_t format_type = 1;
 	const int     byte_count = *bit_depth/8;
-	const int32_t bytes_per_second = (int32_t)(*sample_rate * byte_count * buffer->num_channels);
 	const int16_t block_align = (int16_t)(buffer->num_channels * byte_count);
-	const int32_t data_length = (int32_t)(buffer->num_samples * byte_count * buffer->num_channels);
+	const int32_t bytes_per_second = (int32_t)(*sample_rate * block_align);
+	const int32_t data_length = (int32_t)(buffer->num_samples * block_align);
 	const int32_t file_size = data_length+36;
 
 	if (log_header) printf("WRITE---------\nFormat Length: %d\nFormat Type: %d\nBytes Per Second: %d\nBlock Align: %d\nData Length: %d\nFile Size%d\n",
@@ -201,6 +201,7 @@ static bool px_write_wav(px_buffer* buffer, const char* path, int32_t* sample_ra
 	fwrite(&bytes_per_second, 4, 1, file);
 	fwrite(&block_align, 2, 1, file);
 	fwrite(bit_depth, 2, 1, file);
+
 	fwrite(data, 1, 4, file);
 	fwrite(&data_length, 4, 1, file);
 	
